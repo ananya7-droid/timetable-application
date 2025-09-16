@@ -1,23 +1,40 @@
 import pandas as pd
 import random
 
-DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"]
-SLOTS = ["9-10", "10-11", "11-12", "1-2", "2-3", "3-4"]
+DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+PERIODS = [1,2,3,4,5,6]
 
-def generate_timetable(subjects_df, faculty_df, classes_df, days=DAYS, slots=SLOTS):
-    schedule = []
-    for _, class_row in classes_df.iterrows():
-        class_id = class_row['class_id']
-        subjects = subjects_df[subjects_df['year'] == class_row['year']]
-        for _, subj in subjects.iterrows():
-            day = random.choice(days)
-            slot = random.choice(slots)
-            schedule.append({
-                "class_id": class_id,
-                "year": class_row['year'],
-                "day": day,
-                "slot": slot,
-                "subject": subj['subject_name'],
-                "faculty": subj['faculty_id']
-            })
-    return pd.DataFrame(schedule)
+def generate_timetable(classes_df, subjects_df, faculty_df, labs_df):
+    """
+    Returns a dict: {class_id: DataFrame of timetable}
+    """
+    timetable = {}  # {class_name: DataFrame}
+    
+    for idx, row in classes_df.iterrows():
+        class_name = row['class_name']
+        df = pd.DataFrame(index=PERIODS, columns=DAYS)
+        subjects = subjects_df['subject_id'].tolist()
+        random.shuffle(subjects)
+        
+        # Assign labs first (2 consecutive periods)
+        labs = subjects_df[subjects_df['type'] == 'lab']['subject_id'].tolist()
+        lab_idx = 0
+        for day in DAYS:
+            if lab_idx < len(labs):
+                df.at[1, day] = labs[lab_idx]
+                df.at[2, day] = labs[lab_idx]
+                lab_idx += 1
+        
+        # Assign theory subjects avoiding same period on multiple days
+        theory = subjects_df[subjects_df['type']=='theory']['subject_id'].tolist()
+        for period in PERIODS:
+            for day in DAYS:
+                if pd.isna(df.at[period, day]):
+                    if theory:
+                        sub = theory.pop(0)
+                        df.at[period, day] = sub
+                        theory.append(sub)  # rotate subjects
+        
+        timetable[class_name] = df
+
+    return timetable
