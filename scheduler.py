@@ -35,6 +35,6 @@ def generate_timetable(classes_df, subjects_df, faculty_df, labs_df):
                         df.at[period, day] = sub
                         theory.append(sub)  # rotate subjects
         
-        timetable[class_name] = df
+        timetable[class_id] = df
 
     return timetable
