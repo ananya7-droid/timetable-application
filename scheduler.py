@@ -11,7 +11,7 @@ def generate_timetable(classes_df, subjects_df, faculty_df, labs_df):
     timetable = {}  # {class_name: DataFrame}
     
     for idx, row in classes_df.iterrows():
-        class_name = row['class_name']
+        class_id = row['class_id']
         df = pd.DataFrame(index=PERIODS, columns=DAYS)
         subjects = subjects_df['subject_id'].tolist()
         random.shuffle(subjects)
