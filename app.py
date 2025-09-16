@@ -27,6 +27,23 @@ if login_button:
         # Generate timetable once for the session
         timetable_df = generate_timetable(classes_df, subjects_df, faculty_df, labs_df)
 
+        # Create mapping dictionaries for IDs to names
+        subject_map = pd.Series(subjects_df['subject_name'].values, index=subjects_df['subject_id']).to_dict()
+        faculty_map = pd.Series(faculty_df['faculty_name'].values, index=faculty_df['faculty_id']).to_dict()
+
+        # Function to replace IDs with names in timetable cells
+        def replace_ids_with_names(df):
+            def replace_cell(cell):
+                # Split by newline if multiple IDs per cell
+                parts = str(cell).split('\n')
+                replaced_parts = [subject_map.get(p, faculty_map.get(p, p)) for p in parts]
+                return '\n'.join(replaced_parts)
+            return df.applymap(replace_cell)
+ 
+        # Replace IDs in all class timetables in the dictionary
+        for class_id in timetable_df:
+            timetable_df[class_id] = replace_ids_with_names(timetable_df[class_id])
+
         if role == "admin":
             st.subheader("📚 Class-wise Timetable")
             for c in classes_df['class_id']:
