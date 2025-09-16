@@ -1,0 +1,7 @@
+subject_id,subject_name,year,faculty_id
+S1,Statistics for DA,1,F1
+S2,Python Programming,1,F2
+S3,Data Visualization,2,F3
+S4,Machine Learning,2,F4
+S5,Big Data,3,F5
+S6,Deep Learning,3,F6
