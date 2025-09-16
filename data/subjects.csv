@@ -1,7 +1,10 @@
-subject_id,subject_name,year,faculty_id
-S1,Statistics for DA,1,F1
-S2,Python Programming,1,F2
-S3,Data Visualization,2,F3
-S4,Machine Learning,2,F4
-S5,Big Data,3,F5
-S6,Deep Learning,3,F6
+subject_id,subject_name,type
+S001,machine learning,theory
+S002,exploratory data analysis,theory
+S003,prompt engineering,theory
+S004,power bi,theory
+S005,python programming,theory
+S006,statistical analysis,theory
+L001,power bi lab,lab
+L002,python programming lab,lab
+L003,eda lab,lab
