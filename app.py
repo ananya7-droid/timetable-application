@@ -28,27 +28,46 @@ if login_button:
         timetable_df = generate_timetable(classes_df, subjects_df, faculty_df, labs_df)
 
         if role == "admin":
-            st.subheader("Class-wise Timetable")
+            st.subheader("📚 Class-wise Timetable")
             for c in classes_df['class_id']:
-                st.write(f"**{c}**")
+                st.markdown(f"### Class: `{c}`")
                 st.table(get_class_timetable(timetable_df, c))
 
-            st.subheader("Teacher-wise Timetable")
+            st.subheader("👩‍🏫 Teacher-wise Timetable")
             for f in faculty_df['faculty_name']:
-                st.write(f"**{f}**")
-                st.table(get_teacher_timetable(timetable_df, f))
+                st.markdown(f"### Faculty: `{f}`")
+                teacher_tt = get_teacher_timetable(timetable_df, f)
+                if isinstance(teacher_tt, dict):
+                    for class_name, df in teacher_tt.items():
+                        st.markdown(f"**Class: {class_name}**")
+                        st.table(df)
+                else:
+                    st.table(teacher_tt)
 
             # Button to export timetable
-            if st.button("Download Timetable as Excel"):
+            if st.button("📥 Download Timetable as Excel"):
                 export_timetable(timetable_df, "outputs/timetable.xlsx")
-                st.success("Timetable exported to outputs/timetable.xlsx")
+                st.success("✅ Timetable exported to `outputs/timetable.xlsx`")
         
         elif role == "teacher":
             faculty_id = user.iloc[0]['faculty_id']
-            st.subheader("Your Timetable")
-            st.table(get_teacher_timetable(timetable_df, faculty_id))
-            st.subheader("Free Periods Today")
-            st.table(get_teacher_timetable(timetable_df, faculty_id, free_periods=True))
+            st.subheader("📆 Your Timetable")
+            teacher_tt = get_teacher_timetable(timetable_df, faculty_id)
+            if isinstance(teacher_tt, dict):
+                for class_name, df in teacher_tt.items():
+                    st.markdown(f"**Class: {class_name}**")
+                    st.table(df)
+            else:
+                st.table(teacher_tt)
+
+            st.subheader("🕒 Free Periods Today")
+            free_tt = get_teacher_timetable(timetable_df, faculty_id, free_periods=True)
+            if isinstance(free_tt, dict):
+                for class_name, df in free_tt.items():
+                    st.markdown(f"**Class: {class_name}**")
+                    st.table(df)
+            else:
+                st.table(free_tt)
         
     else:
-        st.sidebar.error("Invalid credentials")
+        st.sidebar.error("❌ Invalid credentials")
