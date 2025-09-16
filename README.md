@@ -34,9 +34,3 @@ Clone this repo and install requirements:
 pip install -r requirements.txt
 
 streamlit run app.py
-
-
-
----
-
-👉 Do you want me to now also give you **ready-to-paste code for `app.py`, `scheduler.py`, and `utils.py`** so you can add them on GitHub the same way?
