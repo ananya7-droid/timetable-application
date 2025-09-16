@@ -29,7 +29,7 @@ if login_button:
 
         if role == "admin":
             st.subheader("Class-wise Timetable")
-            for c in classes_df['class_name']:
+            for c in classes_df['class_id']:
                 st.write(f"**{c}**")
                 st.table(get_class_timetable(timetable_df, c))
 
