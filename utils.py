@@ -1,9 +1,9 @@
 import pandas as pd
 
-def get_class_timetable(timetable_dict, class_id):
-    return timetable_dict.get(class_id, pd.DataFrame())
-
 def get_teacher_timetable(timetable_dict, faculty_id, free_periods=False):
+    """
+    Returns a dict: class_id -> timetable DataFrame (days as rows, periods as columns)
+    """
     result = {}
     for class_id, df in timetable_dict.items():
         def has_fac(cell):
@@ -11,7 +11,7 @@ def get_teacher_timetable(timetable_dict, faculty_id, free_periods=False):
                 return False
             if ":" in cell:
                 parts = cell.split(":")
-                if len(parts)>=2 and parts[1].strip()==faculty_id:
+                if len(parts)>=2 and parts[1].strip() == faculty_id:
                     return True
             return False
 
@@ -23,16 +23,9 @@ def get_teacher_timetable(timetable_dict, faculty_id, free_periods=False):
             filtered = df.where(mask)
 
         filtered = filtered.dropna(how='all', axis=0).dropna(how='all', axis=1)
+
         if not filtered.empty:
-            result[class_id] = filtered
+            # Transpose so periods are columns, days are rows
+            result[class_id] = filtered.T
 
-    if not result:
-        return pd.DataFrame()
-    if len(result)==1:
-        return next(iter(result.values()))
     return result
-
-def export_timetable(timetable_dict, filename):
-    with pd.ExcelWriter(filename, engine='xlsxwriter') as writer:
-        for class_id, df in timetable_dict.items():
-            df.to_excel(writer, sheet_name=class_id)
