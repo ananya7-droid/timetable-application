@@ -1,7 +1,7 @@
 faculty_id,faculty_name,subject_ids,lab_incharge
-L001,Dr. Sharma,"S001,S002,S003,S004,S005,S006","Lab1,Lab2"
-L002,Prof. Mehta,"S007,S008,S009,S010,S011,S012","Lab3"
-L003,Dr. Singh,"S013,S014,S015,S016,S017,S018","Lab4,Lab5"
-L004,Ms. Kaur,"S001,S002,S003,S004,S005,S006","Lab6"
-L005,Mr. Patel,"S007,S008,S009,S010,S011,S012","Lab7"
-L006,Dr. Gupta,"S013,S014,S015,S016,S017,S018","Lab8,Lab9"
+F001,Dr. Sharma,"S101,S102,S103,S104,S105,S106","Data Analytics Lab 1,Machine Learning Lab"
+F002,Prof. Mehta,"S201,S202,S203,S204,S205,S206","Operating Systems Lab"
+F003,Dr. Singh,"S301,S302,S303,S304,S305,S306","Artificial Intelligence Lab,Cloud Computing Lab"
+F004,Ms. Kaur,"S101,S102,S103,S104,S105,S106","Database Systems Lab"
+F005,Mr. Patel,"S201,S202,S203,S204,S205,S206","Networks Lab"
+F006,Dr. Gupta,"S301,S302,S303,S304,S305,S306","Cybersecurity Lab"
