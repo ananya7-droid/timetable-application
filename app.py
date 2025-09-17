@@ -12,7 +12,7 @@ users_df = pd.read_csv("data/users.csv")
 
 st.title("Timetable App")
 
-# Maps
+# Maps for subject names and types
 subject_map = pd.Series(subjects_df['subject_name'].values, index=subjects_df['subject_id']).to_dict()
 subject_type_map = pd.Series(subjects_df['type'].values, index=subjects_df['subject_id']).to_dict()
 faculty_map = pd.Series(faculty_df['faculty_name'].values, index=faculty_df['faculty_id']).to_dict()
@@ -62,7 +62,7 @@ if st.sidebar.button("Login"):
             for fid in faculty_df['faculty_id']:
                 fname = faculty_map[fid]
                 st.markdown(f"### {fname} (ID: {fid})")
-                tt = get_teacher_timetable(timetable, fid, subject_map=subject_type_map)
+                tt = get_teacher_timetable(timetable, fid, subject_map=subject_type_map, subject_name_map=subject_map)
                 if isinstance(tt, dict):
                     for cname, df in tt.items():
                         st.markdown(f"**Class {cname}**")
@@ -73,7 +73,7 @@ if st.sidebar.button("Login"):
             for fid in faculty_df['faculty_id']:
                 fname = faculty_map[fid]
                 st.markdown(f"### {fname} (ID: {fid}) Free Periods")
-                free_tt = get_teacher_timetable(timetable, fid, free_periods=True, subject_map=subject_type_map)
+                free_tt = get_teacher_timetable(timetable, fid, free_periods=True, subject_map=subject_type_map, subject_name_map=subject_map)
                 if isinstance(free_tt, dict):
                     for cname, df in free_tt.items():
                         st.markdown(f"**Class {cname}**")
@@ -86,7 +86,7 @@ if st.sidebar.button("Login"):
 
         elif role == "teacher":
             st.subheader("Your Timetable")
-            tt = get_teacher_timetable(timetable, faculty_id_logged, subject_map=subject_type_map)
+            tt = get_teacher_timetable(timetable, faculty_id_logged, subject_map=subject_type_map, subject_name_map=subject_map)
             if isinstance(tt, dict):
                 for cname, df in tt.items():
                     st.markdown(f"**Class {cname}**")
@@ -94,7 +94,7 @@ if st.sidebar.button("Login"):
             else:
                 st.table(tt)
             st.subheader("Free Periods")
-            free_tt = get_teacher_timetable(timetable, faculty_id_logged, free_periods=True, subject_map=subject_type_map)
+            free_tt = get_teacher_timetable(timetable, faculty_id_logged, free_periods=True, subject_map=subject_type_map, subject_name_map=subject_map)
             if isinstance(free_tt, dict):
                 for cname, df in free_tt.items():
                     st.markdown(f"**Class {cname}**")
