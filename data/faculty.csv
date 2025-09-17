@@ -1,7 +1,17 @@
-faculty_id,faculty_name
-F001,Dr. Akanksha
-F002,Prof. Rakesh
-F003,Dr. Swetha
-F004,Prof. Kiran
-F005,Dr. Meera
-F006,Prof. Arjun
+faculty_id,faculty_name,subject_ids,lab_incharge
+L001,Dr. Sharma,S001,S002,Lab1
+L002,Prof. Mehta,S002,S003,Lab2
+L003,Dr. Singh,S004,S005,Lab3
+
+L004,Ms. Kaur,S007,S008,Lab4
+L005,Mr. Patel,S009,S010,Lab5
+L006,Dr. Gupta,S011,S012,Lab6
+
+L007,Dr. Rao,S013,S014,Lab7
+L008,Ms. Iyer,S015,S016,Lab8
+L009,Mr. Das,S017,S018,Lab9
+
+# Extra labs for 3 faculties (comma separated)
+L010,Dr. Kumar,S001,S007,Lab1,Lab7
+L011,Ms. Nair,S005,S013,Lab3,Lab7
+L012,Mr. Singh,S010,S015,Lab5,Lab8
