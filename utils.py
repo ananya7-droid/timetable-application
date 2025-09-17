@@ -9,9 +9,8 @@ def get_teacher_timetable(timetable_dict, faculty_id, free_periods=False):
     result = {}
 
     for class_id, df in timetable_dict.items():
-        # Check which cells contain this faculty
         def has_fac(cell):
-            if pd.isna(cell) or cell == "":
+            if pd.isna(cell) or cell=="":
                 return False
             if ":" in cell:
                 sid, fid = cell.split(":")
@@ -25,17 +24,18 @@ def get_teacher_timetable(timetable_dict, faculty_id, free_periods=False):
         else:
             filtered = df.where(mask)
 
+        # drop empty rows/columns
         filtered = filtered.dropna(how='all', axis=0).dropna(how='all', axis=1)
 
         if not filtered.empty:
-            result[class_id] = filtered.T  # transpose for display: days = rows, periods = columns
+            result[class_id] = filtered.T  # transpose for display
 
-    return result  # always a dict
+    return result  # always dict
 
 
 def export_timetable(timetable_dict, filename):
     """
-    Exports the timetable dict to an Excel file with each class as a sheet.
+    Exports the timetable dict to an Excel file, each class in a separate sheet.
     """
     with pd.ExcelWriter(filename, engine='xlsxwriter') as writer:
         for class_id, df in timetable_dict.items():
