@@ -1,8 +1,8 @@
 user_id,password,role,faculty_id
-admin,admin123,admin,admin
-Dr. Akanksha,akanksha123,teacher,F001
-Prof. Rakesh,rakesh123,teacher,F002
-Dr. Swetha,swetha123,teacher,F003
-Prof. Kiran,kiran123,teacher,F004
-Dr. Meera,meera123,teacher,F005
-Prof. Arjun,arjun123,teacher,F006
+admin,admin123,admin,
+sharma,YourPassSharma,teacher,F001
+mehta,YourPassMehta,teacher,F002
+singh,YourPassSingh,teacher,F003
+kaur,YourPassKaur,teacher,F004
+patel,YourPassPatel,teacher,F005
+gupta,YourPassGupta,teacher,F006
