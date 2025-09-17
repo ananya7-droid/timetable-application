@@ -27,24 +27,27 @@ if login_button:
         # Generate timetable once for the session
         timetable_df = generate_timetable(classes_df, subjects_df, faculty_df, labs_df)
 
-        # Create mapping dictionaries
+        # Mapping dicts
         subject_map = pd.Series(subjects_df['subject_name'].values, index=subjects_df['subject_id']).to_dict()
         faculty_map = pd.Series(faculty_df['faculty_name'].values, index=faculty_df['faculty_id']).to_dict()
 
-        # Format cell content: "SubjectName (FacultyName)"
+        # Function to format cell as "SubjectName (FacultyName)"
         def format_cell(value):
             if isinstance(value, str) and ':' in value:
                 sub_id, fac_id = value.split(':')
                 sub_name = subject_map.get(sub_id, sub_id)
                 fac_name = faculty_map.get(fac_id, fac_id)
                 return f"{sub_name} ({fac_name})"
+            elif isinstance(value, str) and value in subject_map:
+                # Sometimes just subject id without faculty id
+                return subject_map.get(value, value)
             else:
                 return value
 
         def replace_ids_with_names(df):
             return df.applymap(format_cell)
 
-        # Replace IDs in all class timetables and transpose so days on X-axis, periods on Y-axis
+        # For all classes, convert IDs to names & transpose (days X-axis)
         for class_id in timetable_df:
             timetable_df[class_id] = replace_ids_with_names(timetable_df[class_id])
             timetable_df[class_id] = timetable_df[class_id].T
@@ -53,12 +56,13 @@ if login_button:
             st.subheader("📚 Class-wise Timetable")
             for c in classes_df['class_id']:
                 st.markdown(f"### Class: `{c}`")
+                # Get class timetable from the processed timetable_df
                 st.table(timetable_df[c])
 
             st.subheader("👩‍🏫 Teacher-wise Timetable")
             for f_id, f_name in faculty_map.items():
                 st.markdown(f"### Faculty: `{f_name}`")
-                teacher_tt = get_teacher_timetable(timetable_df, f_id)
+                teacher_tt = get_teacher_timetable(timetable_df, f_id)  # Pass faculty ID here!
                 if isinstance(teacher_tt, dict):
                     for class_name, df in teacher_tt.items():
                         formatted_df = replace_ids_with_names(df).T
