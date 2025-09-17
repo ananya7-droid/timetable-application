@@ -1,4 +1,4 @@
-class_id,year,section,strength
-C1,1,A,50
-C2,2,A,50
-C3,3,A,50
+class_id,class_name
+DA_Year1,DA Year 1
+DA_Year2,DA Year 2
+DA_Year3,DA Year 3
