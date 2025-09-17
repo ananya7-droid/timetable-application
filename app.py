@@ -50,13 +50,13 @@ if st.sidebar.button("Login"):
         # Generate timetable
         timetable = generate_timetable(classes_df, subjects_df, faculty_df, labs_df)
 
-        # Format: replace IDs with names
+        # Format timetable: periods = columns, days = rows
         for cls in list(timetable.keys()):
             df_raw = timetable[cls]
             df_fmt = replace_ids(df_raw)
-            timetable[cls] = df_fmt.T  # periods as columns, days as rows
+            timetable[cls] = df_fmt.T
 
-        # --- Admin View ---
+        # ---------------- Admin View ----------------
         if role=="admin":
             st.subheader("Class Timetables")
             for cls in classes_df['class_id']:
@@ -72,6 +72,7 @@ if st.sidebar.button("Login"):
                 if not tt:
                     st.write("No assigned periods")
                 else:
+                    # tt is always a dict: class_id -> DataFrame
                     for cname, df in tt.items():
                         st.markdown(f"**Class {cname}**")
                         st.table(df)
@@ -80,7 +81,7 @@ if st.sidebar.button("Login"):
                 export_timetable(timetable, "outputs/timetable.xlsx")
                 st.success("Exported timetable to outputs/timetable.xlsx")
 
-        # --- Teacher View ---
+        # ---------------- Teacher View ----------------
         elif role=="teacher":
             st.subheader("Your Timetable")
             tt = get_teacher_timetable(timetable, faculty_id_logged)
