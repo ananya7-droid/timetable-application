@@ -38,7 +38,7 @@ def replace_ids(df):
 username = st.sidebar.text_input("Username")
 password = st.sidebar.text_input("Password", type="password")
 if st.sidebar.button("Login"):
-    user = users_df[(users_df['user_id'] == username) & (users_df['password'] == password)]
+    user = users_df[(users_df['user_id']==username) & (users_df['password']==password)]
     if user.empty:
         st.sidebar.error("Invalid credentials")
     else:
@@ -48,16 +48,13 @@ if st.sidebar.button("Login"):
 
         timetable = generate_timetable(classes_df, subjects_df, faculty_df, labs_df)
 
-        # Debug: display first class raw
-        # st.write("Raw timetable sample:", timetable.get(classes_df['class_id'].iloc[0]).head())
-
-        # Format & transpose
+        # Format & transpose for display: periods x days
         for cls in list(timetable.keys()):
             df_raw = timetable[cls]
             df_fmt = replace_ids(df_raw)
-            timetable[cls] = df_fmt.T
+            timetable[cls] = df_fmt
 
-        if role == "admin":
+        if role=="admin":
             st.subheader("Class Timetables")
             for cls in classes_df['class_id']:
                 st.markdown(f"### Class: {cls}")
@@ -76,11 +73,11 @@ if st.sidebar.button("Login"):
                 else:
                     st.table(tt)
 
-            if st.button("Export"):
+            if st.button("Export Timetable"):
                 export_timetable(timetable, "outputs/timetable.xlsx")
-                st.success("Exported.")
+                st.success("Exported timetable to outputs/timetable.xlsx")
 
-        elif role == "teacher":
+        elif role=="teacher":
             st.subheader("Your Timetable")
             tt = get_teacher_timetable(timetable, faculty_id_logged)
             if isinstance(tt, dict):
@@ -96,5 +93,9 @@ if st.sidebar.button("Login"):
                 for cname, df in free.items():
                     st.markdown(f"**Class {cname}**")
                     st.table(df)
-                else:
-                    st.table(free)
+            else:
+                st.table(free)
+
+            if st.button("Export My Timetable"):
+                export_timetable({faculty_id_logged: tt}, f"outputs/{username}_timetable.xlsx")
+                st.success(f"Exported to outputs/{username}_timetable.xlsx")
