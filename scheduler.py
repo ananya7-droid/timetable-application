@@ -3,7 +3,7 @@ import random
 
 def generate_timetable(classes_df, subjects_df, faculty_df, labs_df):
     days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-    periods = [f"Period {i}" for i in range(1, 7)]
+    periods = [f"Period {i}" for i in range(1,7)]
 
     # Map subject -> faculty
     subject_faculty = {}
@@ -14,16 +14,13 @@ def generate_timetable(classes_df, subjects_df, faculty_df, labs_df):
                 subject_faculty[sid] = row['faculty_id']
 
     timetable = {}
-    # Keep track of faculty assignments to prevent clashes
-    faculty_schedule = {fid: {day: set() for day in days} for fid in faculty_df['faculty_id']}
+    faculty_schedule = {fid: {day:set() for day in days} for fid in faculty_df['faculty_id']}
 
     for _, class_row in classes_df.iterrows():
         class_id = class_row['class_id']
         class_name = class_row['class_name']
-
         df = pd.DataFrame(index=periods, columns=days)
 
-        # All theory subjects and labs for this class
         subs = subjects_df[subjects_df['class_id']==class_name]['subject_id'].tolist()
         labs = labs_df[labs_df['class_id']==class_name]['lab_id'].tolist()
         all_slots = subs + labs
@@ -33,16 +30,14 @@ def generate_timetable(classes_df, subjects_df, faculty_df, labs_df):
                 random.shuffle(all_slots)
                 assigned = False
                 for slot in all_slots:
-                    fid = subject_faculty.get(slot, None)
+                    fid = subject_faculty.get(slot)
                     if fid:
-                        # Check if faculty is free this day
                         if period not in faculty_schedule[fid][day]:
                             df.at[period, day] = f"{slot}:{fid}"
                             faculty_schedule[fid][day].add(period)
                             assigned = True
                             break
                     else:
-                        # Lab without faculty
                         df.at[period, day] = slot
                         assigned = True
                         break
