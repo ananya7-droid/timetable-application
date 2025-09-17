@@ -12,24 +12,22 @@ users_df = pd.read_csv("data/users.csv")
 
 st.title("Timetable App")
 
-# Maps for display
+# Maps
 subject_map = pd.Series(subjects_df['subject_name'].values, index=subjects_df['subject_id']).to_dict()
 faculty_map = pd.Series(faculty_df['faculty_name'].values, index=faculty_df['faculty_id']).to_dict()
 
 def format_cell(cell):
-    if pd.isna(cell) or cell == "":
+    if pd.isna(cell) or cell=="":
         return ""
     if ":" in cell:
         sid, fid = cell.split(":")
-        sid = sid.strip()
-        fid = fid.strip()
+        sid, fid = sid.strip(), fid.strip()
         sub_name = subject_map.get(sid, sid)
         fac_name = faculty_map.get(fid, fid)
         return f"{sub_name} ({fac_name})"
     elif isinstance(cell, str) and cell in subject_map:
         return subject_map[cell]
-    else:
-        return cell
+    return cell
 
 def replace_ids(df):
     return df.applymap(format_cell)
@@ -47,45 +45,44 @@ if st.sidebar.button("Login"):
         faculty_id_logged = user.iloc[0].get('faculty_id', "")
         st.sidebar.success(f"Logged in as {role}")
 
-        # Generate timetable
         timetable = generate_timetable(classes_df, subjects_df, faculty_df, labs_df)
 
-        # Replace IDs with names and transpose for display
+        # Replace IDs with names
         for cls in timetable.keys():
-            timetable[cls] = replace_ids(timetable[cls]).T  # periods=columns, days=rows
+            timetable[cls] = replace_ids(timetable[cls])
 
-        # ---------------- Admin View ----------------
-        if role == "admin":
+        # ---------------- Admin ----------------
+        if role=="admin":
             st.subheader("Class Timetables")
             for cls in classes_df['class_id']:
-                st.markdown(f"### Class: {cls}")
-                st.table(timetable.get(cls, pd.DataFrame()))
+                st.markdown(f"### Class {cls}")
+                st.table(timetable[cls].T)  # days=rows, periods=columns
 
             st.subheader("Teacher Timetables")
             for _, row in faculty_df.iterrows():
                 fid = row['faculty_id']
                 fname = row['faculty_name']
                 st.markdown(f"### {fname} (ID: {fid})")
-                teacher_tt = get_teacher_timetable(timetable, fid)
-                if not teacher_tt:
+                tt = get_teacher_timetable(timetable, fid)
+                if not tt:
                     st.write("No assigned periods")
                 else:
-                    for cname, df in teacher_tt.items():
+                    for cname, df in tt.items():
                         st.markdown(f"**Class {cname}**")
                         st.table(df)
 
             if st.button("Export Full Timetable"):
                 export_timetable(timetable, "outputs/full_timetable.xlsx")
-                st.success("Exported full timetable to outputs/full_timetable.xlsx")
+                st.success("Exported full timetable.")
 
-        # ---------------- Teacher View ----------------
-        elif role == "teacher":
+        # ---------------- Teacher ----------------
+        elif role=="teacher":
             st.subheader("Your Timetable")
-            teacher_tt = get_teacher_timetable(timetable, faculty_id_logged)
-            if not teacher_tt:
+            tt = get_teacher_timetable(timetable, faculty_id_logged)
+            if not tt:
                 st.write("No assigned periods")
             else:
-                for cname, df in teacher_tt.items():
+                for cname, df in tt.items():
                     st.markdown(f"**Class {cname}**")
                     st.table(df)
 
@@ -99,5 +96,5 @@ if st.sidebar.button("Login"):
                     st.table(df)
 
             if st.button("Export My Timetable"):
-                export_timetable(teacher_tt, f"outputs/{username}_timetable.xlsx")
-                st.success(f"Exported to outputs/{username}_timetable.xlsx")
+                export_timetable(tt, f"outputs/{username}_timetable.xlsx")
+                st.success("Exported your timetable.")
