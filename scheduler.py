@@ -1,4 +1,5 @@
 import pandas as pd
+import random
 
 def generate_timetable(classes_df, subjects_df, faculty_df, labs_df):
     days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
@@ -6,32 +7,36 @@ def generate_timetable(classes_df, subjects_df, faculty_df, labs_df):
 
     # Map subject → faculty_id
     subject_faculty = {}
-    for _, frow in faculty_df.iterrows():
-        # clean whitespace
-        subj_ids = str(frow['subject_ids']).split(',')
-        for sid in subj_ids:
+    for _, row in faculty_df.iterrows():
+        subs = str(row['subject_ids']).split(',')
+        for sid in subs:
             sid = sid.strip()
             if sid:
-                subject_faculty[sid] = frow['faculty_id']
+                subject_faculty[sid] = row['faculty_id']
 
     timetable = {}
     for _, class_row in classes_df.iterrows():
         class_id = class_row['class_id']
-        subs = subjects_df[subjects_df['class_id'] == class_id]['subject_id'].tolist()
+        subs = subjects_df[(subjects_df['class_id'] == class_row['class_name']) & (subjects_df['type']=='theory')]['subject_id'].tolist()
+        labs = labs_df[labs_df['class_id']==class_row['class_name']]['lab_id'].tolist()
+        all_slots = subs + labs
 
         df = pd.DataFrame(index=periods, columns=days)
 
-        if not subs:
-            # no subjects — fill blanks
+        used_slots = {day: set() for day in days}
+
+        for i, period in enumerate(periods):
             for day in days:
-                for period in periods:
-                    df.at[period, day] = ""
-        else:
-            for i, period in enumerate(periods):
-                for j, day in enumerate(days):
-                    sid = subs[(i + j) % len(subs)]
-                    fid = subject_faculty.get(sid, "")
-                    df.at[period, day] = f"{sid}:{fid}"
+                # pick a subject/lab not used this period on other days
+                available = [s for s in all_slots if s not in used_slots[day]]
+                if not available:
+                    cell = ""
+                else:
+                    cell = random.choice(available)
+                    used_slots[day].add(cell)
+                fid = subject_faculty.get(cell, "")
+                df.at[period, day] = f"{cell}:{fid}" if fid else cell
+
         timetable[class_id] = df
 
     return timetable
