@@ -57,7 +57,7 @@ if st.sidebar.button("Login"):
             timetable[cls] = df_fmt.T
 
         # ---------------- Admin View ----------------
-        if role=="admin":
+        if role == "admin":
             st.subheader("Class Timetables")
             for cls in classes_df['class_id']:
                 st.markdown(f"### Class: {cls}")
@@ -72,7 +72,7 @@ if st.sidebar.button("Login"):
                 if not tt:
                     st.write("No assigned periods")
                 else:
-                    # tt is always a dict: class_id -> DataFrame
+                    # Loop through all classes for this teacher
                     for cname, df in tt.items():
                         st.markdown(f"**Class {cname}**")
                         st.table(df)
@@ -82,7 +82,7 @@ if st.sidebar.button("Login"):
                 st.success("Exported timetable to outputs/timetable.xlsx")
 
         # ---------------- Teacher View ----------------
-        elif role=="teacher":
+        elif role == "teacher":
             st.subheader("Your Timetable")
             tt = get_teacher_timetable(timetable, faculty_id_logged)
             if not tt:
