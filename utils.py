@@ -33,5 +33,5 @@ def get_teacher_timetable(timetable_dict, faculty_id, free_periods=False, subjec
 
 def export_timetable(timetable_dict, filename):
     with pd.ExcelWriter(filename, engine='xlsxwriter') as writer:
-        for class_id, df in timetable_dict.items():
-            df.to_excel(writer, sheet_name=class_id)
+        for key, df in timetable_dict.items():
+            df.to_excel(writer, sheet_name=str(key))
