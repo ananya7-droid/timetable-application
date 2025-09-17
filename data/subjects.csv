@@ -1,10 +1,21 @@
-subject_id,subject_name,type
-S001,machine learning,theory
-S002,exploratory data analysis,theory
-S003,prompt engineering,theory
-S004,power bi,theory
-S005,python programming,theory
-S006,statistical analysis,theory
-L001,power bi lab,lab
-L002,python programming lab,lab
-L003,eda lab,lab
+subject_id,subject_name,class_id
+S001,Math,DA_Year1
+S002,English,DA_Year1
+S003,Programming,DA_Year1
+S004,Physics,DA_Year1
+S005,Chemistry,DA_Year1
+S006,Biology,DA_Year1
+
+S007,Data Science,DA_Year2
+S008,Statistics,DA_Year2
+S009,Algorithms,DA_Year2
+S010,Calculus,DA_Year2
+S011,Linear Algebra,DA_Year2
+S012,Probability,DA_Year2
+
+S013,Machine Learning,DA_Year3
+S014,Databases,DA_Year3
+S015,AI Ethics,DA_Year3
+S016,Neural Networks,DA_Year3
+S017,Computer Vision,DA_Year3
+S018,Natural Language Processing,DA_Year3
