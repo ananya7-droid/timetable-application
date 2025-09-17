@@ -3,20 +3,16 @@ import pandas as pd
 from scheduler import generate_timetable
 from utils import get_teacher_timetable, get_class_timetable, export_timetable
 
+# Load CSVs
 faculty_df = pd.read_csv("data/faculty.csv")
 subjects_df = pd.read_csv("data/subjects.csv")
 labs_df = pd.read_csv("data/labs.csv")
 classes_df = pd.read_csv("data/classes.csv")
-users_df = pd.read_csv("data/users.csv")
-
-def parse_list_column(df, col_name):
-    return df[col_name].apply(lambda x: [i.strip() for i in x.split(',')] if pd.notna(x) else [])
-
-faculty_df['subject_ids_list'] = parse_list_column(faculty_df, 'subject_ids')
-faculty_df['lab_incharge_list'] = parse_list_column(faculty_df, 'lab_incharge')
+users_df = pd.read_csv("data/users.csv")  # contains login info
 
 st.title("Automated Timetable Generator")
 
+# --- LOGIN ---
 st.sidebar.title("Login")
 username = st.sidebar.text_input("Username")
 password = st.sidebar.text_input("Password", type="password")
@@ -28,47 +24,51 @@ if login_button:
         role = user.iloc[0]['role']
         st.sidebar.success(f"Logged in as {role}")
 
+        # Generate timetable once for the session
         timetable_df = generate_timetable(classes_df, subjects_df, faculty_df, labs_df)
 
+        # Create mapping dictionaries
         subject_map = pd.Series(subjects_df['subject_name'].values, index=subjects_df['subject_id']).to_dict()
         faculty_map = pd.Series(faculty_df['faculty_name'].values, index=faculty_df['faculty_id']).to_dict()
-        lab_map = pd.Series(labs_df['lab_name'].values, index=labs_df['lab_id']).to_dict()
+
+        # Format cell content: "SubjectName (FacultyName)"
+        def format_cell(value):
+            if isinstance(value, str) and ':' in value:
+                sub_id, fac_id = value.split(':')
+                sub_name = subject_map.get(sub_id, sub_id)
+                fac_name = faculty_map.get(fac_id, fac_id)
+                return f"{sub_name} ({fac_name})"
+            else:
+                return value
 
         def replace_ids_with_names(df):
-            def convert_cell(cell):
-                if pd.isna(cell) or cell == "":
-                    return ""
-                # Cell format: "subject_id|faculty_id"
-                parts = cell.split('|')
-                if len(parts) == 2:
-                    subj_name = subject_map.get(parts[0], parts[0])
-                    faculty_name = faculty_map.get(parts[1], parts[1])
-                    return f"{subj_name} ({faculty_name})"
-                return cell
-            return df.applymap(convert_cell)
+            return df.applymap(format_cell)
 
+        # Replace IDs in all class timetables and transpose so days on X-axis, periods on Y-axis
         for class_id in timetable_df:
             timetable_df[class_id] = replace_ids_with_names(timetable_df[class_id])
+            timetable_df[class_id] = timetable_df[class_id].T
 
         if role == "admin":
             st.subheader("📚 Class-wise Timetable")
             for c in classes_df['class_id']:
                 st.markdown(f"### Class: `{c}`")
-                st.table(get_class_timetable(timetable_df, c))
+                st.table(timetable_df[c])
 
             st.subheader("👩‍🏫 Teacher-wise Timetable")
-            for _, row in faculty_df.iterrows():
-                faculty_name = row['faculty_name']
-                faculty_id = row['faculty_id']
-                st.markdown(f"### Faculty: {faculty_name}")
-                teacher_tt = get_teacher_timetable(timetable_df, faculty_id)
+            for f_id, f_name in faculty_map.items():
+                st.markdown(f"### Faculty: `{f_name}`")
+                teacher_tt = get_teacher_timetable(timetable_df, f_id)
                 if isinstance(teacher_tt, dict):
                     for class_name, df in teacher_tt.items():
+                        formatted_df = replace_ids_with_names(df).T
                         st.markdown(f"**Class: {class_name}**")
-                        st.table(df)
+                        st.table(formatted_df)
                 else:
-                    st.table(teacher_tt)
+                    formatted_df = replace_ids_with_names(teacher_tt).T
+                    st.table(formatted_df)
 
+            # Export button
             if st.button("📥 Download Timetable as Excel"):
                 export_timetable(timetable_df, "outputs/timetable.xlsx")
                 st.success("✅ Timetable exported to `outputs/timetable.xlsx`")
@@ -79,34 +79,23 @@ if login_button:
             teacher_tt = get_teacher_timetable(timetable_df, faculty_id)
             if isinstance(teacher_tt, dict):
                 for class_name, df in teacher_tt.items():
+                    formatted_df = replace_ids_with_names(df).T
                     st.markdown(f"**Class: {class_name}**")
-                    st.table(df)
+                    st.table(formatted_df)
             else:
-                st.table(teacher_tt)
+                formatted_df = replace_ids_with_names(teacher_tt).T
+                st.table(formatted_df)
 
             st.subheader("🕒 Free Periods Today")
             free_tt = get_teacher_timetable(timetable_df, faculty_id, free_periods=True)
             if isinstance(free_tt, dict):
                 for class_name, df in free_tt.items():
+                    formatted_df = replace_ids_with_names(df).T
                     st.markdown(f"**Class: {class_name}**")
-                    st.table(df)
+                    st.table(formatted_df)
             else:
-                st.table(free_tt)
-
-            subjects_taught = []
-            faculty_row = faculty_df[faculty_df['faculty_id'] == faculty_id]
-            if not faculty_row.empty:
-                subjects_taught = faculty_row.iloc[0]['subject_ids_list']
-            subject_names = [subject_map.get(sid, sid) for sid in subjects_taught]
-            st.subheader("📝 Subjects You Teach")
-            st.write(", ".join(subject_names))
-
-            labs_managed = []
-            if not faculty_row.empty:
-                labs_managed = faculty_row.iloc[0]['lab_incharge_list']
-            lab_names = [lab_map.get(lab_id, lab_id) for lab_id in labs_managed]
-            st.subheader("🧪 Labs You Manage")
-            st.write(", ".join(lab_names))
+                formatted_df = replace_ids_with_names(free_tt).T
+                st.table(formatted_df)
 
     else:
         st.sidebar.error("❌ Invalid credentials")
