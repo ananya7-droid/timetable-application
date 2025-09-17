@@ -31,3 +31,12 @@ def get_teacher_timetable(timetable_dict, faculty_id, free_periods=False):
             result[class_id] = filtered.T  # transpose for display: days = rows, periods = columns
 
     return result  # always a dict
+
+
+def export_timetable(timetable_dict, filename):
+    """
+    Exports the timetable dict to an Excel file with each class as a sheet.
+    """
+    with pd.ExcelWriter(filename, engine='xlsxwriter') as writer:
+        for class_id, df in timetable_dict.items():
+            df.to_excel(writer, sheet_name=class_id)
