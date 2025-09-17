@@ -1,8 +1,8 @@
 user_id,password,role,faculty_id
 admin,admin123,admin,admin
-sharma,Sharma123,teacher,F001
-mehta,Mehta123,teacher,F002
-singh,Singh123,teacher,F003
-kaur,Kaur123,teacher,F004
-patel,Patel123,teacher,F005
-gupta,Gupta123,teacher,F006
+sharma,sharma123,teacher,F001
+mehta,mehta123,teacher,F002
+singh,singh123,teacher,F003
+kaur,kaur123,teacher,F004
+patel,patel123,teacher,F005
+gupta,gupta123,teacher,F006
