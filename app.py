@@ -1,9 +1,8 @@
 import streamlit as st
 import pandas as pd
 from scheduler import generate_timetable
-from utils import get_teacher_timetable, export_timetable
+from utils import get_teacher_timetable, get_class_timetable, export_timetable
 
-# Load CSVs
 faculty_df = pd.read_csv("data/faculty.csv")
 subjects_df = pd.read_csv("data/subjects.csv")
 labs_df = pd.read_csv("data/labs.csv")
@@ -12,32 +11,35 @@ users_df = pd.read_csv("data/users.csv")
 
 st.title("Timetable App")
 
-# Maps
+# For subject mapping
 subject_map = pd.Series(subjects_df['subject_name'].values, index=subjects_df['subject_id']).to_dict()
+subject_type_map = pd.Series(subjects_df['type'].values, index=subjects_df['subject_id']).to_dict()
 faculty_map = pd.Series(faculty_df['faculty_name'].values, index=faculty_df['faculty_id']).to_dict()
 
 def format_cell(cell):
-    if pd.isna(cell) or cell=="":
+    if pd.isna(cell) or cell == "":
         return ""
     if ":" in cell:
         sid, fid = cell.split(":")
-        sid, fid = sid.strip(), fid.strip()
+        sid = sid.strip()
+        fid = fid.strip()
         sub_name = subject_map.get(sid, sid)
         fac_name = faculty_map.get(fid, fid)
         return f"{sub_name} ({fac_name})"
-    elif isinstance(cell, str) and cell in subject_map:
+    elif cell in subject_map:
         return subject_map[cell]
-    return cell
+    else:
+        return cell
 
 def replace_ids(df):
     return df.applymap(format_cell)
 
-# --- Login ---
 username = st.sidebar.text_input("Username")
 password = st.sidebar.text_input("Password", type="password")
+login_btn = st.sidebar.button("Login")
 
-if st.sidebar.button("Login"):
-    user = users_df[(users_df['user_id']==username) & (users_df['password']==password)]
+if login_btn:
+    user = users_df[(users_df['user_id'] == username) & (users_df['password'] == password)]
     if user.empty:
         st.sidebar.error("Invalid credentials")
     else:
@@ -47,54 +49,33 @@ if st.sidebar.button("Login"):
 
         timetable = generate_timetable(classes_df, subjects_df, faculty_df, labs_df)
 
-        # Replace IDs with names
-        for cls in timetable.keys():
-            timetable[cls] = replace_ids(timetable[cls])
+        timetable_fmt = {
+            cls: replace_ids(df) for cls, df in timetable.items()
+        }
 
-        # ---------------- Admin ----------------
-        if role=="admin":
+        if role == "admin":
             st.subheader("Class Timetables")
             for cls in classes_df['class_id']:
-                st.markdown(f"### Class {cls}")
-                st.table(timetable[cls].T)  # days=rows, periods=columns
-
+                st.markdown(f"### Class: {cls}")
+                st.table(timetable_fmt.get(cls, pd.DataFrame()))
             st.subheader("Teacher Timetables")
-            for _, row in faculty_df.iterrows():
-                fid = row['faculty_id']
-                fname = row['faculty_name']
+            for fid in faculty_df['faculty_id']:
+                fname = faculty_map[fid]
                 st.markdown(f"### {fname} (ID: {fid})")
-                tt = get_teacher_timetable(timetable, fid)
-                if not tt:
-                    st.write("No assigned periods")
-                else:
-                    for cname, df in tt.items():
-                        st.markdown(f"**Class {cname}**")
-                        st.table(df)
+                tt = get_teacher_timetable(timetable, fid, subject_map=subject_type_map)
+                st.table(tt)
+            if st.button("Export All"):
+                export_timetable(timetable_fmt, "outputs/timetable.xlsx")
+                st.success("Exported timetable to outputs/timetable.xlsx.")
 
-            if st.button("Export Full Timetable"):
-                export_timetable(timetable, "outputs/full_timetable.xlsx")
-                st.success("Exported full timetable.")
-
-        # ---------------- Teacher ----------------
-        elif role=="teacher":
+        elif role == "teacher":
             st.subheader("Your Timetable")
-            tt = get_teacher_timetable(timetable, faculty_id_logged)
-            if not tt:
-                st.write("No assigned periods")
-            else:
-                for cname, df in tt.items():
-                    st.markdown(f"**Class {cname}**")
-                    st.table(df)
-
+            tt = get_teacher_timetable(timetable, faculty_id_logged, subject_map=subject_type_map)
+            st.table(tt)
             st.subheader("Free Periods")
-            free_tt = get_teacher_timetable(timetable, faculty_id_logged, free_periods=True)
-            if not free_tt:
-                st.write("No free periods")
-            else:
-                for cname, df in free_tt.items():
-                    st.markdown(f"**Class {cname}**")
-                    st.table(df)
-
-            if st.button("Export My Timetable"):
-                export_timetable(tt, f"outputs/{username}_timetable.xlsx")
-                st.success("Exported your timetable.")
+            free_tt = get_teacher_timetable(timetable, faculty_id_logged, free_periods=True, subject_map=subject_type_map)
+            st.table(free_tt)
+            if st.button("Download Your Timetable"):
+                fname = f"outputs/{faculty_id_logged}_timetable.xlsx"
+                export_timetable({faculty_id_logged: tt}, fname)
+                st.success(f"Exported timetable to {fname}.")
