@@ -1,10 +1,4 @@
 lab_id,lab_name,class_id
-L101,Data Analytics Lab 1,DA Year 1
-L102,Machine Learning Lab,DA Year 1
-L103,Database Systems Lab,DA Year 1
-L201,Operating Systems Lab,DA Year 2
-L202,Networks Lab,DA Year 2
-L203,Software Engineering Lab,DA Year 2
-L301,Artificial Intelligence Lab,DA Year 3
-L302,Cloud Computing Lab,DA Year 3
-L303,Cybersecurity Lab,DA Year 3
+LAB1,Data Analytics Lab 1,DA Year 1
+LAB2,Database Lab,DA Year 2
+LAB3,Machine Learning Lab,DA Year 3
