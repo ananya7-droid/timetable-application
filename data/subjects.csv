@@ -1,31 +1,13 @@
 subject_id,subject_name,class_id,type
-SUB1,Mathematics,DA Year 1,theory
-SUB2,Physics,DA Year 1,theory
-SUB3,Chemistry,DA Year 1,theory
-SUB4,Electronics,DA Year 1,theory
-SUB5,Computer Science,DA Year 1,theory
-SUB6,Engineering Drawing,DA Year 1,theory
-
-SUB7,Mathematics,DA Year 2,theory
-SUB8,Physics,DA Year 2,theory
-SUB9,Chemistry,DA Year 2,theory
-SUB10,Electronics,DA Year 2,theory
-SUB11,Computer Science,DA Year 2,theory
-SUB12,Engineering Drawing,DA Year 2,theory
-
-SUB13,Mathematics,DA Year 3,theory
-SUB14,Physics,DA Year 3,theory
-SUB15,Chemistry,DA Year 3,theory
-SUB16,Electronics,DA Year 3,theory
-SUB17,Computer Science,DA Year 3,theory
-SUB18,Engineering Drawing,DA Year 3,theory
-
+S101,Introduction to Data Analytics,DA Year 1,theory
+S102,Statistics for Data Analytics,DA Year 1,theory
+S103,Python Programming,DA Year 1,theory
+S104,Data Visualization,DA Year 2,theory
+S105,Database Management Systems,DA Year 2,theory
+S106,Linear Algebra & Probability,DA Year 2,theory
+S201,Machine Learning Basics,DA Year 3,theory
+S202,Big Data Analytics,DA Year 3,theory
+S203,Data Mining,DA Year 3,theory
 LAB1,Data Analytics Lab 1,DA Year 1,lab
-LAB2,Machine Learning Lab,DA Year 1,lab
-LAB3,Database Systems Lab,DA Year 1,lab
-LAB4,Operating Systems Lab,DA Year 2,lab
-LAB5,Networks Lab,DA Year 2,lab
-LAB6,Software Engineering Lab,DA Year 2,lab
-LAB7,Artificial Intelligence Lab,DA Year 3,lab
-LAB8,Cloud Computing Lab,DA Year 3,lab
-LAB9,Cybersecurity Lab,DA Year 3,lab
+LAB2,Database Lab,DA Year 2,lab
+LAB3,Machine Learning Lab,DA Year 3,lab
