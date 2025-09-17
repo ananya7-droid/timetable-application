@@ -2,17 +2,20 @@ import pandas as pd
 
 def get_teacher_timetable(timetable_dict, faculty_id, free_periods=False):
     """
-    Returns dict: class_id -> timetable DataFrame (days as rows, periods as columns)
+    Returns a dict mapping class_id -> DataFrame for that teacher.
+    Always returns a dict, even if only one class.
+    DataFrame is transposed: days = rows, periods = columns.
     """
     result = {}
+
     for class_id, df in timetable_dict.items():
+        # Check which cells contain this faculty
         def has_fac(cell):
-            if pd.isna(cell) or cell=="":
+            if pd.isna(cell) or cell == "":
                 return False
             if ":" in cell:
-                parts = cell.split(":")
-                if len(parts)>=2 and parts[1].strip() == faculty_id:
-                    return True
+                sid, fid = cell.split(":")
+                return fid.strip() == faculty_id
             return False
 
         mask = df.applymap(has_fac)
@@ -25,15 +28,6 @@ def get_teacher_timetable(timetable_dict, faculty_id, free_periods=False):
         filtered = filtered.dropna(how='all', axis=0).dropna(how='all', axis=1)
 
         if not filtered.empty:
-            # Transpose for display: periods as columns, days as rows
-            result[class_id] = filtered.T
+            result[class_id] = filtered.T  # transpose for display: days = rows, periods = columns
 
-    return result
-
-def get_class_timetable(timetable_dict, class_id):
-    return timetable_dict.get(class_id, pd.DataFrame())
-
-def export_timetable(timetable_dict, filename):
-    with pd.ExcelWriter(filename, engine='xlsxwriter') as writer:
-        for class_id, df in timetable_dict.items():
-            df.to_excel(writer, sheet_name=class_id)
+    return result  # always a dict
