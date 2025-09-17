@@ -14,31 +14,39 @@ def generate_timetable(classes_df, subjects_df, faculty_df, labs_df):
                 subject_faculty[sid] = row['faculty_id']
 
     timetable = {}
+    # Keep track of faculty assignments to prevent clashes
+    faculty_schedule = {fid: {day: set() for day in days} for fid in faculty_df['faculty_id']}
+
     for _, class_row in classes_df.iterrows():
         class_id = class_row['class_id']
         class_name = class_row['class_name']
 
-        # Theory subjects for this class
-        subs = subjects_df[(subjects_df['class_id'] == class_name) & (subjects_df['type']=='theory')]['subject_id'].tolist()
+        df = pd.DataFrame(index=periods, columns=days)
+
+        # All theory subjects and labs for this class
+        subs = subjects_df[subjects_df['class_id']==class_name]['subject_id'].tolist()
         labs = labs_df[labs_df['class_id']==class_name]['lab_id'].tolist()
         all_slots = subs + labs
 
-        df = pd.DataFrame(index=periods, columns=days)
-
-        used_subjects = {day: set() for day in days}
-
-        for period in periods:
-            for day in days:
-                # pick a subject/lab not already in this period on other days
-                available = [s for s in all_slots if s not in used_subjects[day]]
-                if not available:
-                    cell = ""
-                else:
-                    cell = random.choice(available)
-                    used_subjects[day].add(cell)
-                fid = subject_faculty.get(cell, "")
-                df.at[period, day] = f"{cell}:{fid}" if fid else cell
-
+        for day in days:
+            for period in periods:
+                random.shuffle(all_slots)
+                assigned = False
+                for slot in all_slots:
+                    fid = subject_faculty.get(slot, None)
+                    if fid:
+                        # Check if faculty is free this day
+                        if period not in faculty_schedule[fid][day]:
+                            df.at[period, day] = f"{slot}:{fid}"
+                            faculty_schedule[fid][day].add(period)
+                            assigned = True
+                            break
+                    else:
+                        # Lab without faculty
+                        df.at[period, day] = slot
+                        assigned = True
+                        break
+                if not assigned:
+                    df.at[period, day] = ""
         timetable[class_id] = df
-
     return timetable
