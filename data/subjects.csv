@@ -20,6 +20,12 @@ SUB16,Electronics,DA Year 3,theory
 SUB17,Computer Science,DA Year 3,theory
 SUB18,Engineering Drawing,DA Year 3,theory
 
-LAB1,Lab1,DA Year 1,lab
-LAB2,Lab2,DA Year 2,lab
-LAB3,Lab3,DA Year 3,lab
+LAB1,Data Analytics Lab 1,DA Year 1,lab
+LAB2,Machine Learning Lab,DA Year 1,lab
+LAB3,Database Systems Lab,DA Year 1,lab
+LAB4,Operating Systems Lab,DA Year 2,lab
+LAB5,Networks Lab,DA Year 2,lab
+LAB6,Software Engineering Lab,DA Year 2,lab
+LAB7,Artificial Intelligence Lab,DA Year 3,lab
+LAB8,Cloud Computing Lab,DA Year 3,lab
+LAB9,Cybersecurity Lab,DA Year 3,lab
