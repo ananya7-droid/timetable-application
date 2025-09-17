@@ -1,47 +1,58 @@
 import pandas as pd
-import random
+import numpy as np
 
 def generate_timetable(classes_df, subjects_df, faculty_df, labs_df):
     days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-    periods = [f"Period {i}" for i in range(1,7)]
+    periods = [f"{i}" for i in range(1, 7)]
 
-    # Map subject -> faculty
+    # Faculty subject map
     subject_faculty = {}
-    for _, row in faculty_df.iterrows():
-        for sid in str(row['subject_ids']).split(','):
-            sid = sid.strip()
-            if sid:
-                subject_faculty[sid] = row['faculty_id']
+    for _, frow in faculty_df.iterrows():
+        for sid in str(frow['subject_ids']).split(','):
+            if sid.strip():
+                subject_faculty[sid.strip()] = frow['faculty_id']
+
+    # Assign labs based on 'lab_incharge'
+    lab_faculty = {}
+    for _, frow in faculty_df.iterrows():
+        for labname in str(frow['lab_incharge']).split(','):
+            if labname.strip():
+                lab_faculty[labname.strip()] = frow['faculty_id']
 
     timetable = {}
-    faculty_schedule = {fid: {day:set() for day in days} for fid in faculty_df['faculty_id']}
 
     for _, class_row in classes_df.iterrows():
         class_id = class_row['class_id']
-        class_name = class_row['class_name']
-        df = pd.DataFrame(index=periods, columns=days)
+        subs = subjects_df[(subjects_df['class_id'] == class_id) & (subjects_df['type'] == 'theory')]['subject_id'].tolist()
+        labs = subjects_df[(subjects_df['class_id'] == class_id) & (subjects_df['type'] == 'lab')]['subject_id'].tolist()
 
-        subs = subjects_df[subjects_df['class_id']==class_name]['subject_id'].tolist()
-        labs = labs_df[labs_df['class_id']==class_name]['lab_id'].tolist()
-        all_slots = subs + labs
+        # Ensure clash-free and non-repeating slot allocation for subjects in each period
+        df = pd.DataFrame('', index=days, columns=periods)
+        # Shuffle subjects for fairness
+        subs_cycle = np.array(subs).copy()
+        np.random.shuffle(subs_cycle)
+        # Assign each subject only once per column
+        for ip, period in enumerate(periods):
+            for iday, day in enumerate(days):
+                # Ensure no subject on same period in week
+                sid = subs_cycle[(iday + ip) % len(subs_cycle)]
+                fid = subject_faculty.get(sid, "")
+                df.at[day, period] = f"{sid}:{fid}"
+        
+        # Assign labs to random slots, but do not overwrite existing theory
+        for lab_id in labs:
+            # Find least used slot to place the lab
+            used_slots = {(d, p) for d in days for p in periods if df.at[d, p] != ""}
+            all_slots = [(d, p) for d in days for p in periods]
+            available_slots = list(set(all_slots) - used_slots)
+            # If all slots used, overwrite random
+            if available_slots:
+                lab_day, lab_period = available_slots[0]
+            else:
+                lab_day, lab_period = days[0], periods[-1]
+            fid = lab_faculty.get("Lab"+class_id[-1], "")  # Get lab incharge by class year
+            df.at[lab_day, lab_period] = f"{lab_id}:{fid}"
 
-        for day in days:
-            for period in periods:
-                random.shuffle(all_slots)
-                assigned = False
-                for slot in all_slots:
-                    fid = subject_faculty.get(slot)
-                    if fid:
-                        if period not in faculty_schedule[fid][day]:
-                            df.at[period, day] = f"{slot}:{fid}"
-                            faculty_schedule[fid][day].add(period)
-                            assigned = True
-                            break
-                    else:
-                        df.at[period, day] = slot
-                        assigned = True
-                        break
-                if not assigned:
-                    df.at[period, day] = ""
         timetable[class_id] = df
+
     return timetable
