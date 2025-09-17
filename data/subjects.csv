@@ -1,21 +1,25 @@
-subject_id,subject_name,class_id
-S001,Math,DA_Year1
-S002,English,DA_Year1
-S003,Programming,DA_Year1
-S004,Physics,DA_Year1
-S005,Chemistry,DA_Year1
-S006,Biology,DA_Year1
+subject_id,subject_name,class_id,type
+SUB1,Mathematics,DA Year 1,theory
+SUB2,Physics,DA Year 1,theory
+SUB3,Chemistry,DA Year 1,theory
+SUB4,Electronics,DA Year 1,theory
+SUB5,Computer Science,DA Year 1,theory
+SUB6,Engineering Drawing,DA Year 1,theory
 
-S007,Data Science,DA_Year2
-S008,Statistics,DA_Year2
-S009,Algorithms,DA_Year2
-S010,Calculus,DA_Year2
-S011,Linear Algebra,DA_Year2
-S012,Probability,DA_Year2
+SUB7,Mathematics,DA Year 2,theory
+SUB8,Physics,DA Year 2,theory
+SUB9,Chemistry,DA Year 2,theory
+SUB10,Electronics,DA Year 2,theory
+SUB11,Computer Science,DA Year 2,theory
+SUB12,Engineering Drawing,DA Year 2,theory
 
-S013,Machine Learning,DA_Year3
-S014,Databases,DA_Year3
-S015,AI Ethics,DA_Year3
-S016,Neural Networks,DA_Year3
-S017,Computer Vision,DA_Year3
-S018,Natural Language Processing,DA_Year3
+SUB13,Mathematics,DA Year 3,theory
+SUB14,Physics,DA Year 3,theory
+SUB15,Chemistry,DA Year 3,theory
+SUB16,Electronics,DA Year 3,theory
+SUB17,Computer Science,DA Year 3,theory
+SUB18,Engineering Drawing,DA Year 3,theory
+
+LAB1,Lab1,DA Year 1,lab
+LAB2,Lab2,DA Year 2,lab
+LAB3,Lab3,DA Year 3,lab
