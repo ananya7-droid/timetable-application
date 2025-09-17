@@ -1,34 +1,24 @@
-import pandas as pd
-
-def get_class_timetable(timetable_dict, class_id):
-    return timetable_dict.get(class_id, pd.DataFrame())
-
-def get_teacher_timetable(timetable_dict, faculty_id, free_periods=False):
-    results = {}
-    for class_id, df in timetable_dict.items():
-        def cell_has_faculty(cell):
-            if pd.isna(cell) or cell == "":
-                return False
-            parts = cell.split('|')
-            return len(parts) == 2 and parts[1] == faculty_id
+def get_teacher_timetable(timetable_df, faculty_id, free_periods=False):
+    result = {}
+    for class_id, df in timetable_df.items():
+        # Filter timetable cells for this faculty_id (match faculty name)
+        # Because timetable cells are like "SubjectName\nFacultyName"
+        mask = df.applymap(lambda x: False if pd.isna(x) else faculty_id not in x and faculty_id not in x)
+        filtered = df.where(df.applymap(lambda cell: faculty_id in str(cell) if pd.notna(cell) else False))
 
         if free_periods:
-            mask = df.applymap(lambda x: not cell_has_faculty(x))
+            # Show only free periods (cells where teacher not present)
+            free_df = df.where(df.applymap(lambda cell: faculty_id not in str(cell) if pd.notna(cell) else True))
+            if not free_df.empty:
+                result[class_id] = free_df
         else:
-            mask = df.applymap(cell_has_faculty)
+            # Normal timetable
+            if not filtered.empty:
+                result[class_id] = filtered.dropna(how='all')
 
-        filtered_df = df.where(mask, other="")
+    if len(result) == 1:
+        return list(result.values())[0]
+    return result
 
-        if filtered_df.replace("", pd.NA).dropna(how='all').shape[0] > 0:
-            results[class_id] = filtered_df
-
-    if not results:
-        return pd.DataFrame()
-    if len(results) == 1:
-        return list(results.values())[0]
-    return results
-
-def export_timetable(timetable_dict, filepath):
-    with pd.ExcelWriter(filepath) as writer:
-        for class_id, df in timetable_dict.items():
-            df.to_excel(writer, sheet_name=class_id)
+def get_class_timetable(timetable_df, class_id):
+    return timetable_df.get(class_id, pd.DataFrame())
