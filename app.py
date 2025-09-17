@@ -50,11 +50,9 @@ if st.sidebar.button("Login"):
         # Generate timetable
         timetable = generate_timetable(classes_df, subjects_df, faculty_df, labs_df)
 
-        # Format timetable: periods = columns, days = rows
-        for cls in list(timetable.keys()):
-            df_raw = timetable[cls]
-            df_fmt = replace_ids(df_raw)
-            timetable[cls] = df_fmt.T
+        # Replace IDs with names and transpose for display
+        for cls in timetable.keys():
+            timetable[cls] = replace_ids(timetable[cls]).T  # periods=columns, days=rows
 
         # ---------------- Admin View ----------------
         if role == "admin":
@@ -68,39 +66,38 @@ if st.sidebar.button("Login"):
                 fid = row['faculty_id']
                 fname = row['faculty_name']
                 st.markdown(f"### {fname} (ID: {fid})")
-                tt = get_teacher_timetable(timetable, fid)
-                if not tt:
+                teacher_tt = get_teacher_timetable(timetable, fid)
+                if not teacher_tt:
                     st.write("No assigned periods")
                 else:
-                    # Loop through all classes for this teacher
-                    for cname, df in tt.items():
+                    for cname, df in teacher_tt.items():
                         st.markdown(f"**Class {cname}**")
                         st.table(df)
 
-            if st.button("Export Timetable"):
-                export_timetable(timetable, "outputs/timetable.xlsx")
-                st.success("Exported timetable to outputs/timetable.xlsx")
+            if st.button("Export Full Timetable"):
+                export_timetable(timetable, "outputs/full_timetable.xlsx")
+                st.success("Exported full timetable to outputs/full_timetable.xlsx")
 
         # ---------------- Teacher View ----------------
         elif role == "teacher":
             st.subheader("Your Timetable")
-            tt = get_teacher_timetable(timetable, faculty_id_logged)
-            if not tt:
+            teacher_tt = get_teacher_timetable(timetable, faculty_id_logged)
+            if not teacher_tt:
                 st.write("No assigned periods")
             else:
-                for cname, df in tt.items():
+                for cname, df in teacher_tt.items():
                     st.markdown(f"**Class {cname}**")
                     st.table(df)
 
             st.subheader("Free Periods")
-            free = get_teacher_timetable(timetable, faculty_id_logged, free_periods=True)
-            if not free:
+            free_tt = get_teacher_timetable(timetable, faculty_id_logged, free_periods=True)
+            if not free_tt:
                 st.write("No free periods")
             else:
-                for cname, df in free.items():
+                for cname, df in free_tt.items():
                     st.markdown(f"**Class {cname}**")
                     st.table(df)
 
             if st.button("Export My Timetable"):
-                export_timetable(tt, f"outputs/{username}_timetable.xlsx")
+                export_timetable(teacher_tt, f"outputs/{username}_timetable.xlsx")
                 st.success(f"Exported to outputs/{username}_timetable.xlsx")
