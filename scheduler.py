@@ -58,7 +58,7 @@ def generate_timetable(faculty_df, subject_df, lab_df, class_df, semester_id):
             for p in range(num_periods - 1):
                 lab_vars[(l_i, d, p)] = model.NewBoolVar(f"lab{l}_d{d}_p{p}")
 
-    # Labs assigned once per week
+    # Each lab assigned exactly once per week
     for l, l_i in lab_index.items():
         model.Add(sum(lab_vars[(l_i, d, p)] for d in range(num_days) for p in range(num_periods - 1)) == 1)
 
@@ -79,6 +79,39 @@ def generate_timetable(faculty_df, subject_df, lab_df, class_df, semester_id):
                 if assigned_vars:
                     model.Add(sum(assigned_vars) <= 1)
 
+    # Max 2 occurrences per subject per day
+    for s, s_i in subj_index.items():
+        for d in range(num_days):
+            model.Add(sum(subj_vars[(s_i, d, p)] for p in range(num_periods)) <= 2)
+
+    # Subjects assigned exactly 4 times per week
+    for s, s_i in subj_index.items():
+        model.Add(sum(subj_vars[(s_i, d, p)] for d in range(num_days) for p in range(num_periods)) == 4)
+
+    # No consecutive periods for subject per day
+    for s, s_i in subj_index.items():
+        for d in range(num_days):
+            for p in range(num_periods - 1):
+                model.AddBoolOr([subj_vars[(s_i, d, p)].Not(), subj_vars[(s_i, d, p + 1)].Not()])
+
+    # No subject repeats in the last three periods (periods 4,5,6) on same day
+    for s, s_i in subj_index.items():
+        for d in range(num_days):
+            model.Add(sum(subj_vars[(s_i, d, p)] for p in range(3, 6)) <= 1)
+
+    # Every slot must be assigned exactly one subject or lab (full fill)
+    for d in range(num_days):
+        for p in range(num_periods):
+            slot_vars = []
+            for s, s_i in subj_index.items():
+                slot_vars.append(subj_vars[(s_i, d, p)])
+            for l, l_i in lab_index.items():
+                if p < num_periods - 1:
+                    slot_vars.append(lab_vars.get((l_i, d, p), model.NewConstant(0)))
+                if p > 0:
+                    slot_vars.append(lab_vars.get((l_i, d, p - 1), model.NewConstant(0)))
+            model.Add(sum(slot_vars) == 1)
+
     solver = cp_model.CpSolver()
     status = solver.Solve(model)
 
@@ -96,7 +129,6 @@ def generate_timetable(faculty_df, subject_df, lab_df, class_df, semester_id):
                             "Period": p + 1,
                             "Type": "theory"
                         })
-
         for l, l_i in lab_index.items():
             for d in range(num_days):
                 for p in range(num_periods - 1):
@@ -109,8 +141,7 @@ def generate_timetable(faculty_df, subject_df, lab_df, class_df, semester_id):
                             "Period": p + 1,
                             "Type": "lab"
                         })
-
         return pd.DataFrame(result)
     else:
-        st.error("No feasible timetable solution found.")
+        print("No feasible solution found!")
         return pd.DataFrame()
