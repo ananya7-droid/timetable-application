@@ -1,22 +1,51 @@
 subject_id,subject_name,class_id,type
-SUB1,Mathematics,DA_Year1,theory
-SUB2,Physics,DA_Year1,theory
-SUB3,Chemistry,DA_Year1,theory
-SUB4,Electronics,DA_Year1,theory
-SUB5,Computer Science,DA_Year1,theory
-SUB6,Engineering Drawing,DA_Year1,theory
-LAB1,Lab1,DA_Year1,lab
-SUB7,Mathematics,DA_Year2,theory
-SUB8,Physics,DA_Year2,theory
-SUB9,Chemistry,DA_Year2,theory
-SUB10,Electronics,DA_Year2,theory
-SUB11,Computer Science,DA_Year2,theory
-SUB12,Engineering Drawing,DA_Year2,theory
-LAB2,Lab2,DA_Year2,lab
-SUB13,Mathematics,DA_Year3,theory
-SUB14,Physics,DA_Year3,theory
-SUB15,Chemistry,DA_Year3,theory
-SUB16,Electronics,DA_Year3,theory
-SUB17,Computer Science,DA_Year3,theory
-SUB18,Engineering Drawing,DA_Year3,theory
-LAB3,Lab3,DA_Year3,lab
+101,english1,1,theory
+102,telug1,1,theory
+103,essential MPC,1,theory
+104,advanced,1,theory
+105,design thinking,1,theory
+106,principles of management,1,theory
+201,english2,1,theory
+202,telugu2,1,theory
+203,descriptive statistics,1,theory
+204,maths 1,1,theory
+205,python,1,theory
+206,environmental education,1,theory
+207,economics,1,theory
+208,cyber security,1,theory
+001,python lab,1,lab
+002,descriptive statistics lab,1,lab
+301,UID,2,theory
+301,DOD,2,theory
+301,java,2,theory
+301,algebra,2,theory
+301,random variables,2,theory
+301,aptitude,2,theory
+301,reasoning,2,theory
+003,UID lab,2,lab
+004,DOD lab,2,lab
+005,java lab,2,lab
+006,random variables lab,2,lab
+401,prompt engineering,2,theory
+402,EDA,2,theory
+403,OS,2,theory
+404,sampling distributions,2,theory
+405,inference,2,theory
+007,PE lab,2,lab
+008,EDA lab,2,lab
+009,OS lab,2,lab
+010,sampling distributions lab,2,lab
+011,inference lab,2,lab
+501,NLP,3,theory
+502,BDA,3,theory
+503,power BI,3,theory
+504,ML,3,theory
+505,applied statistics,3,theory
+506,operations research,3,theory
+012,NLP lab,3,lab
+013,BDA lab,3,lab
+014,power BI lab,3,lab
+015,ML lab,3,lab
+016,applied statistics lab,3,lab
+017,operations research lab,3,lab
+005,java lab,2,lab
