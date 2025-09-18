@@ -50,13 +50,12 @@ else:
             ("1", "12:25 PM - 1:15 PM"),
             ("2", "1:15 PM - 2:05 PM"),
             ("3", "2:05 PM - 2:55 PM"),
-            ("Break", "2:55 PM - 3:10 PM"),
             ("4", "3:10 PM - 4:00 PM"),
             ("5", "4:00 PM - 4:50 PM"),
             ("6", "4:50 PM - 5:40 PM"),
         ]
 
-        columns = [f"{num}\n{time}" for num, time in period_times if num != "Break"]
+        columns = [f"{num} {time}" for num, time in period_times]
         grid_df = pd.DataFrame(index=days, columns=columns)
 
         for day in days:
@@ -67,24 +66,19 @@ else:
                 display_name = subj_name + (" (Lab)" if row["Type"] == "lab" else "")
                 if row["Type"] == "lab":
                     lab_cells[row["Period"]] = display_name
-                    lab_cells[row["Period"] + 1] = display_name
+                    if row["Period"] + 1 <= 6:
+                        lab_cells[row["Period"] + 1] = display_name
 
-            for period_num, _ in period_times:
-                if period_num == "Break":
-                    continue
-                period = int(period_num)
-                if period in lab_cells:
-                    grid_df.at[day, f"{period_num}\n{period_times[period - 1][1]}"] = lab_cells[period]
+            for period_idx, (num, time) in enumerate(period_times, 1):
+                if period_idx in lab_cells:
+                    grid_df.at[day, f"{num} {time}"] = lab_cells[period_idx]
                 else:
-                    slot_data = day_data[(day_data["Period"] == period) & (day_data["Type"] != "lab")]
+                    slot_data = day_data[(day_data["Period"] == period_idx) & (day_data["Type"] != "lab")]
                     if not slot_data.empty:
-                        names = [
-                            get_subject_name(subject_df, row["SubjectID"])
-                            for _, row in slot_data.iterrows()
-                        ]
-                        grid_df.at[day, f"{period_num}\n{period_times[period - 1][1]}"] = ", ".join(names)
+                        names = [get_subject_name(subject_df, row["SubjectID"]) for _, row in slot_data.iterrows()]
+                        grid_df.at[day, f"{num} {time}"] = ", ".join(names)
                     else:
-                        grid_df.at[day, f"{period_num}\n{period_times[period - 1][1]}"] = "FREE"
+                        grid_df.at[day, f"{num} {time}"] = ""
 
         st.subheader(f"Timetable for {semester_name}")
         st.table(grid_df)
