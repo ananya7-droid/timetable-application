@@ -1,6 +1,6 @@
 subject_id,subject_name,class_id,type
 101,english1,1,theory
-102,telug1,1,theory
+102,telugu1,1,theory
 103,essential MPC,1,theory
 104,advanced,1,theory
 105,design thinking,1,theory
@@ -8,7 +8,7 @@ subject_id,subject_name,class_id,type
 201,english2,1,theory
 202,telugu2,1,theory
 203,descriptive statistics,1,theory
-204,maths 1,1,theory
+204,discrete maths,1,theory
 205,python,1,theory
 206,environmental education,1,theory
 207,economics,1,theory
