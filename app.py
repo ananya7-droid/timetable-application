@@ -26,7 +26,7 @@ if not st.session_state.login:
         else:
             st.error("Invalid credentials.")
 else:
-    st.sidebar.title("Welcome Admin")
+    st.sidebar.title(f"Welcome, {st.session_state.user['user_id']}")
     if st.sidebar.button("Logout"):
         logout()
 
@@ -54,8 +54,8 @@ else:
             ("5", "4:00 PM - 4:50 PM"),
             ("6", "4:50 PM - 5:40 PM"),
         ]
-
         columns = [f"{num} {time}" for num, time in period_times]
+
         grid_df = pd.DataFrame(index=days, columns=columns)
 
         for day in days:
