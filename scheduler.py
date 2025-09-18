@@ -11,67 +11,117 @@ def generate_timetable(faculty_df, subject_df, lab_df, class_df, semester_id):
         ("16:50", "17:40"),
     ]
     total_periods = len(time_slots)
-    period_num = list(range(1, total_periods + 1))
+    period_nums = list(range(1, total_periods + 1))
 
-    # Build map of subject to faculty and subject type (lab/theory)
-    # Using comprehensive subject list below to match utils.py
-    subject_type_map = subject_df.set_index('subject_id')['type'].to_dict()
-
-    # Faculty assigned round-robin to subjects just for demo purposes
-    sub_fac_map = {}
+    # Build map: subject_id -> {"faculty_id":..., "type":...}
+    subject_to_faculty = {}
     for i, row in subject_df.iterrows():
-        faculty_index = i % len(faculty_df)
-        faculty = faculty_df.iloc[faculty_index]['faculty_id']
-        sub_fac_map[row['subject_id']] = {
-            "faculty_id": faculty,
+        faculty_index = i % len(faculty_df)  # round-robin faculty assign demo
+        faculty_id = faculty_df.iloc[faculty_index]['faculty_id']
+        subject_to_faculty[row['subject_id']] = {
+            "faculty_id": faculty_id,
             "type": row['type']
         }
 
     timetable_records = []
-    assignment_tracker = dict()  # (faculty, day, period) => True
+    # Tracking booked slots: (day, period) for faculty
+    booked_slots = {}
 
-    for subject_id, assign_info in sub_fac_map.items():
-        faculty_id = assign_info['faculty_id']
-        subject_type = assign_info['type']
+    # Prepare a list of all subjects ordered as [theory, then labs]
+    theories = [subj for subj in subject_df['subject_id'] if subject_df[subject_df['subject_id'] == subj]['type'].values[0] == 'theory']
+    labs = [subj for subj in subject_df['subject_id'] if subject_df[subject_df['subject_id'] == subj]['type'].values[0] == 'lab']
+
+    day_index = 0
+    period_index = 0
+
+    # Assign theory subjects: 1 period each
+    for subj in theories:
+        faculty_id = subject_to_faculty[subj]['faculty_id']
         assigned = False
 
-        for day in days:
-            if assigned:
+        # Try every day and period until find free slot
+        for _ in range(len(days) * total_periods):
+            day = days[day_index]
+            period = period_nums[period_index]
+
+            # Check if faculty free at that slot
+            if not booked_slots.get((faculty_id, day, period), False):
+                # Assign
+                timetable_records.append({
+                    "FacultyID": faculty_id,
+                    "SubjectID": subj,
+                    "ClassID": semester_id,
+                    "Day": day,
+                    "Period": period,
+                    "StartTime": pd.to_datetime(time_slots[period-1][0]).time(),
+                    "EndTime": pd.to_datetime(time_slots[period-1][1]).time(),
+                    "Room": "Room 1",
+                    "Type": "theory"
+                })
+                booked_slots[(faculty_id, day, period)] = True
+                assigned = True
+                # Move to next slot for next assignment
+                period_index += 1
+                if period_index >= total_periods:
+                    period_index = 0
+                    day_index = (day_index + 1) % len(days)
                 break
-            if subject_type == 'lab':
-                for p in range(1, total_periods):
-                    if (faculty_id, day, p) not in assignment_tracker and (faculty_id, day, p+1) not in assignment_tracker:
-                        timetable_records.append({
-                            "FacultyID": faculty_id,
-                            "SubjectID": subject_id,
-                            "ClassID": semester_id,
-                            "Day": day,
-                            "Period": p,
-                            "StartTime": pd.to_datetime(time_slots[p-1][0]).time(),
-                            "EndTime": pd.to_datetime(time_slots[p][1]).time(),
-                            "Room": "Lab 1",
-                            "Type": "lab"
-                        })
-                        assignment_tracker[(faculty_id, day, p)] = True
-                        assignment_tracker[(faculty_id, day, p+1)] = True
-                        assigned = True
-                        break
-            else:
-                for p in period_num:
-                    if (faculty_id, day, p) not in assignment_tracker:
-                        timetable_records.append({
-                            "FacultyID": faculty_id,
-                            "SubjectID": subject_id,
-                            "ClassID": semester_id,
-                            "Day": day,
-                            "Period": p,
-                            "StartTime": pd.to_datetime(time_slots[p-1][0]).time(),
-                            "EndTime": pd.to_datetime(time_slots[p-1][1]).time(),
-                            "Room": "Room 1",
-                            "Type": "theory"
-                        })
-                        assignment_tracker[(faculty_id, day, p)] = True
-                        assigned = True
-                        break
+
+            # Slot not free, move to next
+            period_index += 1
+            if period_index >= total_periods:
+                period_index = 0
+                day_index = (day_index + 1) % len(days)
+
+        if not assigned:
+            # No free slot found, could raise error or continue
+            print(f"Warning: could not assign theory subject {subj}")
+
+    # Now assign the labs requiring 2 consecutive periods
+    day_index = 0
+    period_index = 0
+
+    for subj in labs:
+        faculty_id = subject_to_faculty[subj]['faculty_id']
+        assigned = False
+
+        for _ in range(len(days) * (total_periods - 1)):
+            day = days[day_index]
+            period = period_nums[period_index]
+
+            # Check if two consecutive periods free for faculty
+            if period < total_periods:  # last period can't have 2 consecutive periods
+                if (not booked_slots.get((faculty_id, day, period), False)
+                        and not booked_slots.get((faculty_id, day, period + 1), False)):
+                    # Assign lab in these two consecutive periods
+                    timetable_records.append({
+                        "FacultyID": faculty_id,
+                        "SubjectID": subj,
+                        "ClassID": semester_id,
+                        "Day": day,
+                        "Period": period,
+                        "StartTime": pd.to_datetime(time_slots[period-1][0]).time(),
+                        "EndTime": pd.to_datetime(time_slots[period][1]).time(),
+                        "Room": "Lab 1",
+                        "Type": "lab"
+                    })
+                    booked_slots[(faculty_id, day, period)] = True
+                    booked_slots[(faculty_id, day, period + 1)] = True
+                    assigned = True
+                    # Move next slot forward by 2 periods to avoid overlap
+                    period_index += 2
+                    if period_index >= total_periods:
+                        period_index = 0
+                        day_index = (day_index + 1) % len(days)
+                    break
+
+            # Slot not free or no room for 2 consecutive, move next
+            period_index += 1
+            if period_index >= total_periods:
+                period_index = 0
+                day_index = (day_index + 1) % len(days)
+
+        if not assigned:
+            print(f"Warning: could not assign lab subject {subj}")
 
     return pd.DataFrame(timetable_records)
