@@ -19,6 +19,10 @@ if 'login' not in st.session_state:
 if 'timetable' not in st.session_state:
     st.session_state.timetable = pd.DataFrame()  # Empty initially
 
+def logout():
+    st.session_state.clear()
+    st.experimental_rerun()
+
 if not st.session_state.login:
     st.title("Login")
     user_id = st.text_input("User ID")
@@ -34,8 +38,7 @@ else:
     user = st.session_state.user
     st.sidebar.title(f"Welcome {user['user_id']} ({user['role']})")
     if st.sidebar.button("Logout"):
-        st.session_state.clear()
-        st.experimental_rerun()
+        logout()
 
     if user['role'] == 'admin':
         st.title("Admin Dashboard - Semester Timetables")
@@ -54,7 +57,6 @@ else:
             st.success("Timetable generated successfully!")
             st.dataframe(generated_df)
 
-        # Export buttons
         if not st.session_state.timetable.empty:
             if st.button("Export CSV"):
                 export_timetable_csv(timetable, f"timetable_semester_{semester_id}.csv")
@@ -88,7 +90,6 @@ else:
                 st.plotly_chart(fig, use_container_width=True)
                 st.dataframe(filtered)
 
-            # Export options
             if st.button("Export My Timetable CSV"):
                 export_timetable_csv(timetable, f"teacher_timetable_{teacher_id}.csv")
                 st.success("CSV exported successfully")
