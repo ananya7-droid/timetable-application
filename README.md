@@ -28,7 +28,7 @@ bash
 pip install -r requirements.txt
 
 Usage:
-Run the Streamlit app:
+- Run the Streamlit app:
 
 - bash
 streamlit run app.py
@@ -39,7 +39,7 @@ Login as admin
 - View the timetable and export to Excel if needed
 
 Data Format:
-Place input CSV files in the data/ folder:
+- Place input CSV files in the data/ folder:
 
 faculty.csv
 subjects.csv
