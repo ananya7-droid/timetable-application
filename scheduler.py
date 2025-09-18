@@ -48,60 +48,60 @@ def generate_timetable(faculty_df, subject_df, lab_df, class_df, semester_id):
     subj_vars = {}
     lab_vars = {}
 
-    # Subject slots (binary assignment) for all subjects
     for s, s_i in subj_index.items():
         for d in range(num_days):
             for p in range(num_periods):
                 subj_vars[(s_i, d, p)] = model.NewBoolVar(f"subj{s}_d{d}_p{p}")
 
-    # Labs variables (take 2 consecutive periods)
     for l, l_i in lab_index.items():
         for d in range(num_days):
             for p in range(num_periods - 1):
                 lab_vars[(l_i, d, p)] = model.NewBoolVar(f"lab{l}_d{d}_p{p}")
 
-    # Each lab exactly once per week
+    # Each lab assigned exactly once per week and only once per day
     for l, l_i in lab_index.items():
         model.Add(sum(lab_vars[(l_i, d, p)] for d in range(num_days) for p in range(num_periods - 1)) == 1)
+        for d in range(num_days):
+            model.Add(sum(lab_vars[(l_i, d, p)] for p in range(num_periods - 1)) <= 1)
 
-    # Faculty clash avoidance: no double booking per period
+    # Faculty clash avoidance
     for d in range(num_days):
         for p in range(num_periods):
             for fid in faculty_map.keys():
-                assigned = []
+                assigned_vars = []
                 for s, s_i in subj_index.items():
                     if subject_faculty[subj_list[s_i]] == fid:
-                        assigned.append(subj_vars[(s_i, d, p)])
+                        assigned_vars.append(subj_vars[(s_i, d, p)])
                 for l, l_i in lab_index.items():
                     if lab_faculty[lab_list[l_i]] == fid:
                         if p < num_periods - 1:
-                            assigned.append(lab_vars.get((l_i, d, p), model.NewConstant(0)))
+                            assigned_vars.append(lab_vars.get((l_i, d, p), model.NewConstant(0)))
                         if p > 0:
-                            assigned.append(lab_vars.get((l_i, d, p - 1), model.NewConstant(0)))
-                if assigned:
-                    model.Add(sum(assigned) <= 1)
+                            assigned_vars.append(lab_vars.get((l_i, d, p - 1), model.NewConstant(0)))
+                if assigned_vars:
+                    model.Add(sum(assigned_vars) <= 1)
 
-    # Max 2 occurrences of subject per day
+    # Max 1 occurrence per subject per day
     for s, s_i in subj_index.items():
         for d in range(num_days):
-            model.Add(sum(subj_vars[(s_i, d, p)] for p in range(num_periods)) <= 2)
+            model.Add(sum(subj_vars[(s_i, d, p)] for p in range(num_periods)) <= 1)
 
-    # 4 occurrences per week per subject
+    # Subjects assigned exactly 4 times per week
     for s, s_i in subj_index.items():
         model.Add(sum(subj_vars[(s_i, d, p)] for d in range(num_days) for p in range(num_periods)) == 4)
 
-    # No consecutive periods per subject per day
+    # No consecutive periods for subject per day
     for s, s_i in subj_index.items():
         for d in range(num_days):
             for p in range(num_periods - 1):
                 model.AddBoolOr([subj_vars[(s_i, d, p)].Not(), subj_vars[(s_i, d, p + 1)].Not()])
 
-    # No subject repeats in last 3 periods (4,5,6) on same day
+    # Subjects appear at most once in periods 4,5,6 combined per day
     for s, s_i in subj_index.items():
         for d in range(num_days):
             model.Add(sum(subj_vars[(s_i, d, p)] for p in range(3, 6)) <= 1)
 
-    # Each slot filled exactly once
+    # Each slot must be assigned exactly one subject or lab
     for d in range(num_days):
         for p in range(num_periods):
             slot_vars = []
