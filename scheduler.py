@@ -12,7 +12,7 @@ def generate_timetable(faculty_df, subject_df, lab_df, class_df):
     """
 
     # For demonstration, create a simple evenly distributed timetable mock data
-    days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+    days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday,]
     time_slots = [('09:00', '10:00'), ('10:15', '11:15'), ('11:30', '12:30'), ('13:30', '14:30'), ('14:45', '15:45')]
 
     timetable_records = []
