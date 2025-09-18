@@ -2,7 +2,6 @@ import pandas as pd
 
 def load_data():
     faculty_df = pd.read_csv("data/faculty.csv")
-    # Make sure subject_id and lab_id columns are always lists of strings
     def parse_list(df, col):
         df[col] = df[col].fillna("").astype(str).apply(
             lambda x: [i.strip() for i in x.split(",") if i.strip()]
