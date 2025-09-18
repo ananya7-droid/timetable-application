@@ -1,7 +1,7 @@
 import pandas as pd
 
 def get_teacher_timetable(timetable_dict, faculty_id, free_periods=False):
-    faculty_id = str(faculty_id).strip()
+    fid = str(faculty_id).strip()
     result = {}
 
     for class_id, df in timetable_dict.items():
@@ -10,14 +10,13 @@ def get_teacher_timetable(timetable_dict, faculty_id, free_periods=False):
                 return False
             if isinstance(cell, str) and ":" in cell:
                 parts = cell.split(":", 1)
-                if len(parts) == 2 and parts[1].strip() == faculty_id:
+                if len(parts) == 2 and parts[1].strip() == fid:
                     return True
             return False
 
         mask = df.applymap(has_fac)
         filtered = df.where(~mask if free_periods else mask)
-
-        filtered = filtered.dropna(how='all', axis=0).dropna(how='all', axis=1)
+        filtered = filtered.dropna(how='all').dropna(axis=1, how='all')
 
         if not filtered.empty:
             result[class_id] = filtered
