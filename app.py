@@ -12,7 +12,7 @@ users_df = pd.read_csv("data/users.csv")
 
 st.title("Timetable App")
 
-# Create lookup maps for display
+# Mapping dicts for display
 subject_map = pd.Series(subjects_df['subject_name'].values, index=subjects_df['subject_id']).to_dict()
 faculty_map = pd.Series(faculty_df['faculty_name'].values, index=faculty_df['faculty_id']).to_dict()
 
@@ -32,7 +32,7 @@ def format_cell(cell):
 def replace_ids(df):
     return df.applymap(format_cell)
 
-# Sidebar login
+# Login UI
 username = st.sidebar.text_input("Username")
 password = st.sidebar.text_input("Password", type="password")
 
@@ -45,11 +45,15 @@ if st.sidebar.button("Login"):
         faculty_id_logged = str(user.iloc[0].get('faculty_id', '')).strip()
         st.sidebar.success(f"Logged in as {role}")
 
-        # Generate timetable dict[class_id] = DataFrame(periods x days)
+        # Generate timetable
         timetable = generate_timetable(classes_df, subjects_df, faculty_df, labs_df)
 
-        # Format and transpose for display (periods as rows, days as columns)
-        for cls in timetable:
+        # Debug output to help trace
+        st.text(f"Faculty ID logged in: {faculty_id_logged}")
+        st.text(f"Available classes: {list(timetable.keys())}")
+
+        # Format & transpose timetable display
+        for cls in timetable.keys():
             timetable[cls] = replace_ids(timetable[cls]).T
 
         if role == "admin":
@@ -68,25 +72,22 @@ if st.sidebar.button("Login"):
 
             combined_df = pd.DataFrame("", index=periods, columns=days)
 
-            # Fill scheduled classes
             if isinstance(tt, dict):
                 for class_id, df in tt.items():
                     for day in days:
                         for period in periods:
                             if day in df.columns and period in df.index:
                                 cell = df.at[period, day]
-                                if cell and cell.strip() != "":
+                                if cell:
                                     combined_df.at[period, day] += f"{class_id}: {cell}\n"
             elif isinstance(tt, pd.DataFrame):
                 df = tt
                 for day in days:
                     for period in periods:
-                        if day in df.columns and period in df.index:
-                            cell = df.at[period, day]
-                            if cell and cell.strip() != "":
-                                combined_df.at[period, day] = cell
+                        cell = df.at[period, day] if day in df.columns and period in df.index else ""
+                        if cell:
+                            combined_df.at[period, day] = cell
 
-            # Mark free periods
             if isinstance(free, dict):
                 for class_id, df in free.items():
                     for day in days:
