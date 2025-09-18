@@ -12,18 +12,17 @@ def generate_timetable(faculty_df, subject_df, lab_df, class_df, semester_id):
     ]
     total_periods = len(time_slots)
     period_nums = list(range(1, total_periods + 1))
+    reduced_subjects = set([105,106,206,207,208,306,307])  # subjects with 2 periods/week
 
-    # Filter subjects and labs only for the semester
+    # Filter subjects and labs for semester
     semester_subjects = subject_df[subject_df['class_id'] == semester_id]
     semester_labs = lab_df[lab_df['class_id'] == semester_id]
 
-    # Build faculty map with assigned subject and lab IDs
     faculty_map = faculty_df.set_index('faculty_id')[['subject_id', 'lab_id']].to_dict(orient='index')
 
     subjects_for_semester = []
     labs_for_semester = []
 
-    # Map subjects for semester with faculty
     for subj_row in semester_subjects.itertuples():
         subj_id = str(subj_row.subject_id)
         for fac_id, assign in faculty_map.items():
@@ -31,7 +30,6 @@ def generate_timetable(faculty_df, subject_df, lab_df, class_df, semester_id):
                 subjects_for_semester.append((subj_id, fac_id, subj_row.type))
                 break
 
-    # Map labs similarly
     for lab_row in semester_labs.itertuples():
         lab_id = str(lab_row.lab_id)
         for fac_id, assign in faculty_map.items():
@@ -42,83 +40,61 @@ def generate_timetable(faculty_df, subject_df, lab_df, class_df, semester_id):
     timetable_records = []
     booked_slots = {}
 
-    day_index = 0
-    period_index = 0
+    slots = [(d, p) for d in days for p in period_nums]
+    slot_index = 0
 
-    # Assign theory subjects - one period
-    for subj_id, fac_id, typ in [s for s in subjects_for_semester if s[2] != 'lab']:
+    # Assign labs (1 per week, 2 periods)
+    for lab_id, fac_id, _ in labs_for_semester:
         assigned = False
-        for _ in range(len(days) * total_periods):
-            day = days[day_index]
-            period = period_nums[period_index]
-
-            if not booked_slots.get((fac_id, day, period), False):
-                timetable_records.append({
-                    "FacultyID": fac_id,
-                    "SubjectID": subj_id,
-                    "ClassID": semester_id,
-                    "Day": day,
-                    "Period": period,
-                    "StartTime": pd.to_datetime(time_slots[period-1][0]).time(),
-                    "EndTime": pd.to_datetime(time_slots[period-1][1]).time(),
-                    "Room": "Room 1",
-                    "Type": typ
-                })
-                booked_slots[(fac_id, day, period)] = True
-                assigned = True
-                period_index += 1
-                if period_index >= total_periods:
-                    period_index = 0
-                    day_index = (day_index + 1) % len(days)
-                break
-
-            period_index += 1
-            if period_index >= total_periods:
-                period_index = 0
-                day_index = (day_index + 1) % len(days)
-
-        if not assigned:
-            print(f"Warning: could not assign subject {subj_id}")
-
-    # Assign labs - two consecutive periods
-    day_index = 0
-    period_index = 0
-
-    for lab_id, fac_id, _typ in labs_for_semester:
-        assigned = False
-        for _ in range(len(days) * (total_periods - 1)):
-            day = days[day_index]
-            period = period_nums[period_index]
-
-            if period < total_periods:
-                if (not booked_slots.get((fac_id, day, period), False) and
-                    not booked_slots.get((fac_id, day, period + 1), False)):
+        for d in days:
+            for p in range(1, total_periods):
+                if (fac_id, d, p) not in booked_slots and (fac_id, d, p+1) not in booked_slots:
                     timetable_records.append({
                         "FacultyID": fac_id,
                         "SubjectID": lab_id,
                         "ClassID": semester_id,
-                        "Day": day,
-                        "Period": period,
-                        "StartTime": pd.to_datetime(time_slots[period-1][0]).time(),
-                        "EndTime": pd.to_datetime(time_slots[period][1]).time(),
+                        "Day": d,
+                        "Period": p,
+                        "StartTime": pd.to_datetime(time_slots[p-1][0]).time(),
+                        "EndTime": pd.to_datetime(time_slots[p][1]).time(),
                         "Room": "Lab 1",
                         "Type": "lab"
                     })
-                    booked_slots[(fac_id, day, period)] = True
-                    booked_slots[(fac_id, day, period + 1)] = True
+                    booked_slots[(fac_id, d, p)] = True
+                    booked_slots[(fac_id, d, p+1)] = True
                     assigned = True
-                    period_index += 2
-                    if period_index >= total_periods:
-                        period_index = 0
-                        day_index = (day_index + 1) % len(days)
                     break
-
-            period_index += 1
-            if period_index >= total_periods:
-                period_index = 0
-                day_index = (day_index + 1) % len(days)
-
+            if assigned:
+                break
         if not assigned:
-            print(f"Warning: could not assign lab {lab_id}")
+            print(f"Could not assign lab {lab_id}")
+
+    # Theory subjects: 4/week normally, 2/week for a subset
+    subject_instances = []
+    for subj_id, fac_id, typ in [s for s in subjects_for_semester if s[2] != 'lab']:
+        subj_id_int = int(subj_id) if subj_id.isdigit() else -1
+        n_periods = 2 if subj_id_int in reduced_subjects else 4
+        for _ in range(n_periods):
+            subject_instances.append((subj_id, fac_id, typ))
+
+    # Assign theory subjects into available slots
+    for subj_id, fac_id, typ in subject_instances:
+        while slot_index < len(slots):
+            d, p = slots[slot_index]
+            slot_index += 1
+            if (fac_id, d, p) not in booked_slots:
+                timetable_records.append({
+                    "FacultyID": fac_id,
+                    "SubjectID": subj_id,
+                    "ClassID": semester_id,
+                    "Day": d,
+                    "Period": p,
+                    "StartTime": pd.to_datetime(time_slots[p-1][0]).time(),
+                    "EndTime": pd.to_datetime(time_slots[p-1][1]).time(),
+                    "Room": "Room 1",
+                    "Type": typ
+                })
+                booked_slots[(fac_id, d, p)] = True
+                break
 
     return pd.DataFrame(timetable_records)
