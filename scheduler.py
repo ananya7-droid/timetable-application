@@ -11,19 +11,28 @@ def generate_timetable(faculty_df, subject_df, lab_df, class_df):
     ['FacultyID', 'SubjectID', 'ClassID', 'Day', 'StartTime', 'EndTime', 'Room', 'Type']
     """
 
-    # For demonstration, create a simple evenly distributed timetable mock data
-    days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday,]
-    time_slots = [('09:00', '10:00'), ('10:15', '11:15'), ('11:30', '12:30'), ('13:30', '14:30'), ('14:45', '15:45')]
+    # Include Saturday now
+    days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+    # Updated time slots with 15 min break between 14:55 and 15:10
+    time_slots = [
+        ('12:25', '13:15'),
+        ('13:15', '14:05'),
+        ('14:05', '14:55'),
+        # 15 min break (14:55-15:10)
+        ('15:10', '16:00'),
+        ('16:00', '16:50'),
+        ('16:50', '17:40')
+    ]
 
     timetable_records = []
     faculty_ids = faculty_df['faculty_id'].tolist()
     subject_ids = subject_df['subject_id'].tolist()
     class_ids = class_df['class_id'].tolist()
 
-    # Simple round-robin assignment avoiding consecutive >3 (mock example)
     max_consec = 3
-
     idx = 0
+
     for cls in class_ids:
         for day in days:
             consec_cnt = 0
@@ -33,7 +42,6 @@ def generate_timetable(faculty_df, subject_df, lab_df, class_df):
                     idx = 0
                 faculty = faculty_ids[idx]
 
-                # If last faculty same, increment consec count else reset
                 if last_faculty == faculty:
                     if consec_cnt >= max_consec:
                         idx += 1
@@ -46,7 +54,6 @@ def generate_timetable(faculty_df, subject_df, lab_df, class_df):
 
                 last_faculty = faculty
 
-                # Assign subject randomly (or linked via faculty-subject relation)
                 subject = subject_ids[idx % len(subject_ids)]
 
                 timetable_records.append({
@@ -56,7 +63,7 @@ def generate_timetable(faculty_df, subject_df, lab_df, class_df):
                     'Day': day,
                     'StartTime': pd.to_datetime(start).time(),
                     'EndTime': pd.to_datetime(end).time(),
-                    'Room': f'Room {idx%5 + 1}',
+                    'Room': f'Room {idx % 5 + 1}',
                     'Type': 'theory'
                 })
 
