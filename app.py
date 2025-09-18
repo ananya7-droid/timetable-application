@@ -43,4 +43,76 @@ if st.sidebar.button("Login"):
     else:
         role = user.iloc[0]['role']
         faculty_id_logged = str(user.iloc[0].get('faculty_id', '')).strip()
-        st.sidebar.success
+        st.sidebar.success(f"Logged in as {role}")
+
+        timetable = generate_timetable(classes_df, subjects_df, faculty_df, labs_df)
+
+        # Format & transpose for display
+        for cls in timetable:
+            timetable[cls] = replace_ids(timetable[cls]).T
+
+        if role == "admin":
+            st.subheader("Class Timetables")
+            for cls in classes_df['class_id']:
+                st.markdown(f"### Class {cls}")
+                st.table(timetable.get(str(cls), pd.DataFrame()))
+
+            st.subheader("Teacher Timetables")
+            for _, row in faculty_df.iterrows():
+                fid = str(row['faculty_id']).strip()
+                fname = row['faculty_name']
+                st.markdown(f"### {fname} (ID: {fid})")
+                tt = get_teacher_timetable(timetable, fid)
+                if isinstance(tt, dict):
+                    for class_id, df in tt.items():
+                        st.markdown(f"**Class {class_id}**")
+                        st.table(df)
+                elif isinstance(tt, pd.DataFrame):
+                    st.table(tt)
+                else:
+                    st.write("No timetable found.")
+
+        elif role == "teacher":
+            st.subheader("Your Weekly Timetable Across Classes")
+
+            tt = get_teacher_timetable(timetable, faculty_id_logged)
+            free = get_teacher_timetable(timetable, faculty_id_logged, free_periods=True)
+
+            days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+            periods = [f"Period {i}" for i in range(1, 7)]
+            combined_df = pd.DataFrame("", index=periods, columns=days)
+
+            if isinstance(tt, dict):
+                for class_id, df in tt.items():
+                    for day in days:
+                        for period in periods:
+                            if day in df.columns and period in df.index:
+                                cell = df.at[period, day]
+                                if cell:
+                                    combined_df.at[period, day] += f"{class_id}: {cell}\n"
+            elif isinstance(tt, pd.DataFrame):
+                df = tt
+                for day in days:
+                    for period in periods:
+                        cell = df.at[period, day] if day in df.columns and period in df.index else ""
+                        if cell:
+                            combined_df.at[period, day] = cell
+
+            if isinstance(free, dict):
+                for class_id, df in free.items():
+                    for day in days:
+                        for period in periods:
+                            if day in df.columns and period in df.index:
+                                cell = df.at[period, day]
+                                if not cell and combined_df.at[period, day] == "":
+                                    combined_df.at[period, day] = "Free"
+            elif isinstance(free, pd.DataFrame):
+                df = free
+                for day in days:
+                    for period in periods:
+                        if day in df.columns and period in df.index:
+                            cell = df.at[period, day]
+                            if not cell and combined_df.at[period, day] == "":
+                                combined_df.at[period, day] = "Free"
+
+            st.table(combined_df)
