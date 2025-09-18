@@ -56,35 +56,19 @@ else:
             ("6", "4:50 PM - 5:40 PM"),
         ]
 
-        columns = [f"{num}\n{time}" for num, time in period_times if num != "Break"]
-        grid_df = pd.DataFrame(index=days, columns=columns)
-
+        # Show timetable as compressed list without empty slots
         for day in days:
-            day_data = timetable_df[timetable_df["Day"] == day]
-            lab_cells = {}
-            for _, row in day_data.iterrows():
-                subject_name = get_subject_name(subject_df, row["SubjectID"])
-                display_name = subject_name + (" (Lab)" if row["Type"] == "lab" else "")
-                if row["Type"] == "lab":
-                    lab_cells[row["Period"]] = display_name
-                    lab_cells[row["Period"] + 1] = display_name
-
-            for period_num, _ in period_times:
-                if period_num == "Break":
-                    continue
-                period = int(period_num)
-                if period in lab_cells:
-                    grid_df.at[day, f"{period_num}\n{period_times[period - 1][1]}"] = lab_cells[period]
-                else:
-                    slot_data = day_data[(day_data["Period"] == period) & (day_data["Type"] != "lab")]
-                    if not slot_data.empty:
-                        names = [get_subject_name(subject_df, row["SubjectID"]) for _, row in slot_data.iterrows()]
-                        grid_df.at[day, f"{period_num}\n{period_times[period - 1][1]}"] = ", ".join(names)
-                    else:
-                        grid_df.at[day, f"{period_num}\n{period_times[period - 1][1]}"] = ""
-
-        st.subheader(f"Timetable for {semester_name}")
-        st.table(grid_df)
+            st.markdown(f"### {day}")
+            day_data = timetable_df[timetable_df["Day"] == day].sort_values("Period")
+            if day_data.empty:
+                st.write("No classes")
+            else:
+                for _, row in day_data.iterrows():
+                    subj_name = get_subject_name(subject_df, row["SubjectID"])
+                    display_name = subj_name + (" (Lab)" if row["Type"] == "lab" else "")
+                    period_desc = period_times[row["Period"] - 1][1]
+                    st.write(f"{period_desc}: {display_name}")
+            st.markdown("---")
 
         if st.button("Export Timetable Excel"):
             export_timetable_excel(timetable_df, f"timetable_{semester_name.replace(' ', '_')}.xlsx")
