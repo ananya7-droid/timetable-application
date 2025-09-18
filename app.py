@@ -51,7 +51,6 @@ else:
     if timetable_df.empty:
         st.info("No timetable generated yet.")
     else:
-        # Show timetable filtered to selected semester
         filtered_tt = timetable_df[timetable_df['ClassID'] == semester_id].copy()
 
         days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
@@ -79,9 +78,9 @@ else:
                             get_subject_name(subject_df, row['SubjectID']) +
                             (" (Lab)" if row['Type'] == 'lab' else "")
                         )
-                    grid_df.at[day, f"{period_num}\n{period_times[period - 1][1]}"] = ", ".join(subj_names)
+                    grid_df.at[day, f"{period_num}\n{period_times[period-1][1]}"] = ", ".join(subj_names)
                 else:
-                    grid_df.at[day, f"{period_num}\n{period_times[period - 1][1]}"] = ""
+                    grid_df.at[day, f"{period_num}\n{period_times[period-1][1]}"] = ""
 
         st.subheader(f"Timetable for {semester_selected}")
         st.table(grid_df)
