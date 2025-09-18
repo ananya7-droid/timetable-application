@@ -41,10 +41,10 @@ Login as admin
 Data Format:
 - Place input CSV files in the data/ folder:
 
-faculty.csv
-subjects.csv
-labs.csv
-classes.csv
+faculty.csv, 
+subjects.csv, 
+labs.csv, 
+classes.csv, 
 users.csv
 
 Acknowledgements:
