@@ -1,8 +1,8 @@
 import pandas as pd
 
 def load_data():
-    faculty_df = pd.read_csv("faculty.csv")
-    # Parse comma-separated subject_ids and lab_ids into lists for ease
+    faculty_df = pd.read_csv("data/faculty.csv")
+    # Parse comma-separated lists for faculty assignments
     def parse_list(df, col):
         df[col] = df[col].fillna("").apply(lambda x: [i.strip() for i in x.split(",") if i.strip()])
         return df
@@ -10,10 +10,10 @@ def load_data():
     faculty_df = parse_list(faculty_df, "subject_id")
     faculty_df = parse_list(faculty_df, "lab_id")
 
-    subject_df = pd.read_csv("subjects.csv")
-    lab_df = pd.read_csv("labs.csv")
-    class_df = pd.read_csv("classes.csv")
-    users_df = pd.read_csv("users.csv")
+    subject_df = pd.read_csv("data/subjects.csv")
+    lab_df = pd.read_csv("data/labs.csv")
+    class_df = pd.read_csv("data/classes.csv")
+    users_df = pd.read_csv("data/users.csv")
 
     return faculty_df, subject_df, lab_df, class_df, users_df
 
