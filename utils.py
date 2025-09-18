@@ -30,4 +30,4 @@ def get_subject_name(subject_df, subject_id):
     row = subject_df[subject_df['subject_id'] == subject_id]
     if not row.empty:
         return row.iloc[0]['subject_name']
-    return str(subject_id)
+    return "FREE"
