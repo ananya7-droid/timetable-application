@@ -1,28 +1,59 @@
 import pandas as pd
+import streamlit as st
+import os
 
-def get_teacher_timetable(timetable_dict, faculty_id, free_periods=False):
-    fid = str(faculty_id).strip()
-    result = {}
+# Mock in-memory users for login (replace with real DB in production)
+USERS = {
+    "admin": {"password": "admin123", "role": "admin", "faculty_id": "admin"},
+    "santha_kumari": {"password": "santha123", "role": "teacher", "faculty_id": "F1"},
+    "neeraja": {"password": "neeraja123", "role": "teacher", "faculty_id": "F2"},
+    # Add all teachers similarly ...
+}
 
-    for class_id, df in timetable_dict.items():
-        def has_fac(cell):
-            if pd.isna(cell) or cell == "":
-                return False
-            if isinstance(cell, str) and ":" in cell:
-                parts = cell.split(":", 1)
-                if len(parts) == 2 and parts[1].strip() == fid:
-                    return True
-            return False
+def load_data():
+    # Load CSV or Excel files - here we simulate as empty or minimal DataFrame for example
+    faculty_df = pd.DataFrame([
+        {"faculty_id": f"F{i+1}"} for i in range(25)
+    ])
+    subject_df = pd.DataFrame([
+        {"subject_id": i} for i in range(101, 106)
+    ])
+    lab_df = pd.DataFrame()
+    class_df = pd.DataFrame([
+        {"class_id": 1, "class_name": "1st BSc Data Analytics"},
+        {"class_id": 2, "class_name": "2nd BSc Data Analytics"},
+        {"class_id": 3, "class_name": "3rd BSc Data Analytics"}
+    ])
+    timetable_df = pd.DataFrame()  # initial empty timetable
+    return faculty_df, subject_df, lab_df, class_df, timetable_df
 
-        mask = df.applymap(has_fac)
-        filtered = df.where(~mask if free_periods else mask)
-        filtered = filtered.dropna(how='all').dropna(axis=1, how='all')
+def authenticate_user(user_id, password):
+    user = USERS.get(user_id)
+    if user and user['password'] == password:
+        return {"user_id": user_id, "role": user['role'], "faculty_id": user['faculty_id']}
+    return None
 
-        if not filtered.empty:
-            result[class_id] = filtered
+def export_timetable_csv(df, filename):
+    df.to_csv(filename, index=False)
 
-    if not result:
+def export_timetable_excel(df, filename):
+    df.to_excel(filename, index=False, engine='openpyxl')
+
+def get_teacher_timetable_week(timetable_df, faculty_id):
+    # Return subset of timetable for the teacher for upcoming week
+    # Here returning mock empty or prepared data
+    if timetable_df.empty:
         return pd.DataFrame()
-    if len(result) == 1:
-        return next(iter(result.values()))
-    return result
+    return timetable_df[timetable_df['FacultyID'] == faculty_id]
+
+def get_admin_timetable_semester(timetable_df, class_id):
+    if timetable_df.empty:
+        return pd.DataFrame()
+    return timetable_df[timetable_df['ClassID'] == class_id]
+
+def save_feedback(user_id, subject, message):
+    if not os.path.exists("feedback.csv"):
+        with open("feedback.csv", "w") as f:
+            f.write("user_id,subject,message\n")
+    with open("feedback.csv", "a") as f:
+        f.write(f"{user_id},{subject},{message}\n")
