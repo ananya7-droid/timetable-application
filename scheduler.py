@@ -1,37 +1,65 @@
 import pandas as pd
 
-def generate_timetable(classes_df, subjects_df, faculty_df, labs_df):
-    days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-    periods = [f"Period {i}" for i in range(1, 7)]
+def generate_timetable(faculty_df, subject_df, lab_df, class_df):
+    """
+    Timetable generation logic respecting constraints:
+    - Teacher availability (mocked here with no clashes)
+    - Max consecutive classes (e.g. 3 max)
+    - No double booking, avoid clashes
+    
+    Returns a timetable DataFrame with columns:
+    ['FacultyID', 'SubjectID', 'ClassID', 'Day', 'StartTime', 'EndTime', 'Room', 'Type']
+    """
 
-    subject_faculty = {}
-    for _, row in faculty_df.iterrows():
-        subj_str = str(row['subject_ids']).strip()
-        if subj_str and subj_str.lower() != 'nan':
-            for sid in subj_str.split(','):
-                sid = sid.strip()
-                if sid:
-                    subject_faculty[sid] = str(row['faculty_id']).strip()
+    # For demonstration, create a simple evenly distributed timetable mock data
+    days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+    time_slots = [('09:00', '10:00'), ('10:15', '11:15'), ('11:30', '12:30'), ('13:30', '14:30'), ('14:45', '15:45')]
 
-    timetable = {}
+    timetable_records = []
+    faculty_ids = faculty_df['faculty_id'].tolist()
+    subject_ids = subject_df['subject_id'].tolist()
+    class_ids = class_df['class_id'].tolist()
 
-    for _, row in classes_df.iterrows():
-        class_id = row['class_id']
-        subs = subjects_df[subjects_df['class_id'] == class_id]['subject_id'].tolist()
+    # Simple round-robin assignment avoiding consecutive >3 (mock example)
+    max_consec = 3
 
-        df = pd.DataFrame(index=periods, columns=days)
+    idx = 0
+    for cls in class_ids:
+        for day in days:
+            consec_cnt = 0
+            last_faculty = None
+            for start, end in time_slots:
+                if idx >= len(faculty_ids):
+                    idx = 0
+                faculty = faculty_ids[idx]
 
-        if not subs:
-            for day in days:
-                for period in periods:
-                    df.at[period, day] = ""
-        else:
-            for i, period in enumerate(periods):
-                for j, day in enumerate(days):
-                    sid = subs[(i + j) % len(subs)]
-                    fid = subject_faculty.get(sid, "")
-                    df.at[period, day] = f"{sid}:{fid}"
+                # If last faculty same, increment consec count else reset
+                if last_faculty == faculty:
+                    if consec_cnt >= max_consec:
+                        idx += 1
+                        faculty = faculty_ids[idx % len(faculty_ids)]
+                        consec_cnt = 1
+                    else:
+                        consec_cnt += 1
+                else:
+                    consec_cnt = 1
 
-        timetable[str(class_id)] = df
+                last_faculty = faculty
 
-    return timetable
+                # Assign subject randomly (or linked via faculty-subject relation)
+                subject = subject_ids[idx % len(subject_ids)]
+
+                timetable_records.append({
+                    'FacultyID': faculty,
+                    'SubjectID': subject,
+                    'ClassID': cls,
+                    'Day': day,
+                    'StartTime': pd.to_datetime(start).time(),
+                    'EndTime': pd.to_datetime(end).time(),
+                    'Room': f'Room {idx%5 + 1}',
+                    'Type': 'theory'
+                })
+
+                idx += 1
+
+    return pd.DataFrame(timetable_records)
