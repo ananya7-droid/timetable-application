@@ -17,6 +17,7 @@ def generate_timetable(faculty_df, subject_df, lab_df, class_df, semester_id):
     semester_labs = lab_df[lab_df["class_id"] == semester_id].copy()
 
     faculty_map = faculty_df.set_index("faculty_id")[["subject_id", "lab_id"]].to_dict(orient="index")
+
     subject_faculty = {}
     for _, subj in semester_subjects.iterrows():
         sid = str(subj["subject_id"])
@@ -24,6 +25,7 @@ def generate_timetable(faculty_df, subject_df, lab_df, class_df, semester_id):
             if sid in assgn.get("subject_id", []):
                 subject_faculty[sid] = fid
                 break
+
     lab_faculty = {}
     for _, lab in semester_labs.iterrows():
         lid = str(lab["lab_id"])
@@ -55,49 +57,47 @@ def generate_timetable(faculty_df, subject_df, lab_df, class_df, semester_id):
             for p in range(num_periods - 1):
                 lab_vars[(l_i, d, p)] = model.NewBoolVar(f"lab{l}_d{d}_p{p}")
 
-    # Each lab assigned once per week
+    # Each lab assigned exactly once per week
     for l, l_i in lab_index.items():
         model.Add(sum(lab_vars[(l_i, d, p)] for d in range(num_days) for p in range(num_periods - 1)) == 1)
 
-    # Theory subjects scheduled 4 times/week
-    for s, s_i in subj_index.items():
-        model.Add(sum(subj_vars[(s_i, d, p)] for d in range(num_days) for p in range(num_periods)) == 4)
+    # No constraint on total subject frequency (allow repetition to fill slots)
 
-    # No consecutive theory periods for same subject in a day
+    # Subject cannot have consecutive periods on same day
     for s, s_i in subj_index.items():
         for d in range(num_days):
             for p in range(num_periods - 1):
                 model.AddBoolOr([subj_vars[(s_i, d, p)].Not(), subj_vars[(s_i, d, p + 1)].Not()])
 
-    # Faculty cannot be assigned to more than one subject/lab in the same slot
+    # Faculty can only teach one subject/lab in the same slot
     for d in range(num_days):
         for p in range(num_periods):
             for fid in faculty_map.keys():
-                slots = []
+                assigned = []
                 for s, s_i in subj_index.items():
                     if subject_faculty[subj_list[s_i]] == fid:
-                        slots.append(subj_vars[(s_i, d, p)])
+                        assigned.append(subj_vars[(s_i, d, p)])
                 for l, l_i in lab_index.items():
                     if lab_faculty[lab_list[l_i]] == fid:
                         if p < num_periods - 1:
-                            slots.append(lab_vars.get((l_i, d, p), model.NewConstant(0)))
+                            assigned.append(lab_vars.get((l_i, d, p), model.NewConstant(0)))
                         if p > 0:
-                            slots.append(lab_vars.get((l_i, d, p - 1), model.NewConstant(0)))
-                if slots:
-                    model.Add(sum(slots) <= 1)
+                            assigned.append(lab_vars.get((l_i, d, p - 1), model.NewConstant(0)))
+                if assigned:
+                    model.Add(sum(assigned) <= 1)
 
-    # Only one subject/lab per slot
+    # Every slot must be assigned exactly one subject or lab segment
     for d in range(num_days):
         for p in range(num_periods):
-            slot_vars = []
+            assigned_vars = []
             for s, s_i in subj_index.items():
-                slot_vars.append(subj_vars[(s_i, d, p)])
+                assigned_vars.append(subj_vars[(s_i, d, p)])
             for l, l_i in lab_index.items():
                 if p < num_periods - 1:
-                    slot_vars.append(lab_vars.get((l_i, d, p), model.NewConstant(0)))
+                    assigned_vars.append(lab_vars.get((l_i, d, p), model.NewConstant(0)))
                 if p > 0:
-                    slot_vars.append(lab_vars.get((l_i, d, p - 1), model.NewConstant(0)))
-            model.Add(sum(slot_vars) <= 1)
+                    assigned_vars.append(lab_vars.get((l_i, d, p - 1), model.NewConstant(0)))
+            model.Add(sum(assigned_vars) == 1)
 
     solver = cp_model.CpSolver()
     status = solver.Solve(model)
@@ -134,7 +134,6 @@ def generate_timetable(faculty_df, subject_df, lab_df, class_df, semester_id):
                             "EndTime": pd.to_datetime(time_slots[p + 1][1]).time(),
                             "Room": "Lab 1",
                             "Type": "lab",
-                            "Span": 2
                         })
         return pd.DataFrame(result)
     else:
