@@ -16,8 +16,8 @@ def generate_timetable(classes_df, subjects_df, faculty_df, labs_df):
     timetable = {}
 
     for _, class_row in classes_df.iterrows():
-        class_id = str(class_row['class_id'])
-        subs = subjects_df[subjects_df['class_id'] == int(class_id)]['subject_id'].tolist()
+        class_id = class_row['class_id']  # keep as original type (int)
+        subs = subjects_df[subjects_df['class_id'] == class_id]['subject_id'].tolist()
         
         df = pd.DataFrame(index=periods, columns=days)
 
@@ -34,6 +34,6 @@ def generate_timetable(classes_df, subjects_df, faculty_df, labs_df):
                     fid = subject_faculty.get(sid, "")
                     df.at[period, day] = f"{sid}:{fid}"
 
-        timetable[class_id] = df
+        timetable[str(class_id)] = df  # convert to string as dict key for consistency
 
     return timetable
