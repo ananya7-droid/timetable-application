@@ -4,7 +4,7 @@ def get_class_timetable(timetable_dict, class_id):
     return timetable_dict.get(str(class_id), pd.DataFrame())
 
 def get_teacher_timetable(timetable_dict, faculty_id, free_periods=False):
-    faculty_id = str(faculty_id)
+    faculty_id = str(faculty_id).strip()
     result = {}
 
     for class_id, df in timetable_dict.items():
@@ -13,8 +13,10 @@ def get_teacher_timetable(timetable_dict, faculty_id, free_periods=False):
                 return False
             if isinstance(cell, str) and ":" in cell:
                 parts = cell.split(":")
-                if len(parts) >= 2 and parts[1].strip() == faculty_id:
-                    return True
+                if len(parts) >= 2:
+                    fac_part = parts[1].strip()
+                    if fac_part == faculty_id:
+                        return True
             return False
 
         mask = df.applymap(has_fac)
