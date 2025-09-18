@@ -12,9 +12,9 @@ def generate_timetable(faculty_df, subject_df, lab_df, class_df, semester_id):
     ]
     total_periods = len(time_slots)
     period_nums = list(range(1, total_periods + 1))
-    reduced_subjects = set([105,106,206,207,208,306,307])  # subjects with 2 periods/week
 
-    # Filter subjects and labs for semester
+    reduced_subjects = set([105,106,206,207,208,306,307])
+
     semester_subjects = subject_df[subject_df['class_id'] == semester_id]
     semester_labs = lab_df[lab_df['class_id'] == semester_id]
 
@@ -39,11 +39,10 @@ def generate_timetable(faculty_df, subject_df, lab_df, class_df, semester_id):
 
     timetable_records = []
     booked_slots = {}
+    subj_days = {}
+    subj_last_period = {}
 
-    slots = [(d, p) for d in days for p in period_nums]
-    slot_index = 0
-
-    # Assign labs (1 per week, 2 periods)
+    # Assign labs once/week with 2 consecutive periods
     for lab_id, fac_id, _ in labs_for_semester:
         assigned = False
         for d in days:
@@ -67,9 +66,8 @@ def generate_timetable(faculty_df, subject_df, lab_df, class_df, semester_id):
             if assigned:
                 break
         if not assigned:
-            print(f"Could not assign lab {lab_id}")
+            print(f"Warning: could not assign lab {lab_id}")
 
-    # Theory subjects: 4/week normally, 2/week for a subset
     subject_instances = []
     for subj_id, fac_id, typ in [s for s in subjects_for_semester if s[2] != 'lab']:
         subj_id_int = int(subj_id) if subj_id.isdigit() else -1
@@ -77,12 +75,26 @@ def generate_timetable(faculty_df, subject_df, lab_df, class_df, semester_id):
         for _ in range(n_periods):
             subject_instances.append((subj_id, fac_id, typ))
 
-    # Assign theory subjects into available slots
+    slots = [(d, p) for d in days for p in period_nums]
+    slot_index = 0
+
+    # Assign theory subjects avoiding consecutive & same day repetition
     for subj_id, fac_id, typ in subject_instances:
-        while slot_index < len(slots):
+        if subj_id not in subj_days:
+            subj_days[subj_id] = set()
+            subj_last_period[subj_id] = -2
+
+        assigned = False
+        for _ in range(len(slots)):
+            if slot_index >= len(slots):
+                slot_index = 0
             d, p = slots[slot_index]
             slot_index += 1
-            if (fac_id, d, p) not in booked_slots:
+
+            if (d not in subj_days[subj_id] and
+                p - subj_last_period[subj_id] > 1 and
+                (fac_id, d, p) not in booked_slots):
+
                 timetable_records.append({
                     "FacultyID": fac_id,
                     "SubjectID": subj_id,
@@ -95,6 +107,12 @@ def generate_timetable(faculty_df, subject_df, lab_df, class_df, semester_id):
                     "Type": typ
                 })
                 booked_slots[(fac_id, d, p)] = True
+                subj_days[subj_id].add(d)
+                subj_last_period[subj_id] = p
+                assigned = True
                 break
+
+        if not assigned:
+            print(f"Warning: could not assign subject {subj_id}")
 
     return pd.DataFrame(timetable_records)
