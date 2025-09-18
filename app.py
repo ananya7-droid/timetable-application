@@ -32,7 +32,7 @@ def format_cell(cell):
 def replace_ids(df):
     return df.applymap(format_cell)
 
-# Login
+# Login inputs
 username = st.sidebar.text_input("Username")
 password = st.sidebar.text_input("Password", type="password")
 
@@ -47,7 +47,7 @@ if st.sidebar.button("Login"):
 
         timetable = generate_timetable(classes_df, subjects_df, faculty_df, labs_df)
 
-        # Format & transpose for display
+        # Format and transpose each class timetable for display
         for cls in timetable:
             timetable[cls] = replace_ids(timetable[cls]).T
 
@@ -56,21 +56,6 @@ if st.sidebar.button("Login"):
             for cls in classes_df['class_id']:
                 st.markdown(f"### Class {cls}")
                 st.table(timetable.get(str(cls), pd.DataFrame()))
-
-            st.subheader("Teacher Timetables")
-            for _, row in faculty_df.iterrows():
-                fid = str(row['faculty_id']).strip()
-                fname = row['faculty_name']
-                st.markdown(f"### {fname} (ID: {fid})")
-                tt = get_teacher_timetable(timetable, fid)
-                if isinstance(tt, dict):
-                    for class_id, df in tt.items():
-                        st.markdown(f"**Class {class_id}**")
-                        st.table(df)
-                elif isinstance(tt, pd.DataFrame):
-                    st.table(tt)
-                else:
-                    st.write("No timetable found.")
 
         elif role == "teacher":
             st.subheader("Your Weekly Timetable Across Classes")
