@@ -61,14 +61,13 @@ else:
 
         for day in days:
             day_data = timetable_df[timetable_df["Day"] == day]
-            # Handle lab display: fill two consecutive cells if Span exists
             lab_cells = {}
             for _, row in day_data.iterrows():
-                subj_name = get_subject_name(subject_df, row["SubjectID"])
-                cell_name = subj_name + (" (Lab)" if row["Type"] == "lab" else "")
+                subject_name = get_subject_name(subject_df, row["SubjectID"])
+                display_name = subject_name + (" (Lab)" if row["Type"] == "lab" else "")
                 if row["Type"] == "lab":
-                    lab_cells[row["Period"]] = cell_name
-                    lab_cells[row["Period"] + 1] = cell_name
+                    lab_cells[row["Period"]] = display_name
+                    lab_cells[row["Period"] + 1] = display_name
 
             for period_num, _ in period_times:
                 if period_num == "Break":
@@ -79,11 +78,8 @@ else:
                 else:
                     slot_data = day_data[(day_data["Period"] == period) & (day_data["Type"] != "lab")]
                     if not slot_data.empty:
-                        subj_names = [
-                            get_subject_name(subject_df, row["SubjectID"])
-                            for _, row in slot_data.iterrows()
-                        ]
-                        grid_df.at[day, f"{period_num}\n{period_times[period - 1][1]}"] = ", ".join(subj_names)
+                        names = [get_subject_name(subject_df, row["SubjectID"]) for _, row in slot_data.iterrows()]
+                        grid_df.at[day, f"{period_num}\n{period_times[period - 1][1]}"] = ", ".join(names)
                     else:
                         grid_df.at[day, f"{period_num}\n{period_times[period - 1][1]}"] = ""
 
