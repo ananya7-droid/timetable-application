@@ -12,7 +12,7 @@ users_df = pd.read_csv("data/users.csv")
 
 st.title("Timetable App")
 
-# Mapping dictionaries for display
+# Mapping for names
 subject_map = pd.Series(subjects_df['subject_name'].values, index=subjects_df['subject_id']).to_dict()
 faculty_map = pd.Series(faculty_df['faculty_name'].values, index=faculty_df['faculty_id']).to_dict()
 
@@ -34,7 +34,7 @@ def format_cell(cell):
 def replace_ids(df):
     return df.applymap(format_cell)
 
-# Login form in sidebar
+# Login sidebar
 username = st.sidebar.text_input("Username")
 password = st.sidebar.text_input("Password", type="password")
 
@@ -44,26 +44,26 @@ if st.sidebar.button("Login"):
         st.sidebar.error("Invalid credentials")
     else:
         role = user.iloc[0]['role']
-        faculty_id_logged = user.iloc[0].get('faculty_id', "")
+        faculty_id_logged = str(user.iloc[0].get('faculty_id', "")).strip()
         st.sidebar.success(f"Logged in as {role}")
-        
+
         timetable = generate_timetable(classes_df, subjects_df, faculty_df, labs_df)
-        
+
         # Format and transpose timetable for display
         for cls in list(timetable.keys()):
             df_raw = timetable[cls]
             df_fmt = replace_ids(df_raw)
             timetable[cls] = df_fmt.T
-        
+
         if role == "admin":
             st.subheader("Class Timetables")
             for cls in classes_df['class_id']:
                 st.markdown(f"### Class: {cls}")
                 st.table(timetable.get(str(cls), pd.DataFrame()))
-            
+
             st.subheader("Teacher Timetables")
             for _, row in faculty_df.iterrows():
-                fid = row['faculty_id']
+                fid = str(row['faculty_id']).strip()
                 fname = row['faculty_name']
                 st.markdown(f"### {fname} (ID: {fid})")
                 tt = get_teacher_timetable(timetable, fid)
@@ -73,11 +73,11 @@ if st.sidebar.button("Login"):
                         st.table(df)
                 else:
                     st.table(tt)
-            
+
             if st.button("Export"):
                 export_timetable(timetable, "outputs/timetable.xlsx")
                 st.success("Exported.")
-        
+
         elif role == "teacher":
             st.subheader("Your Weekly Timetable Across Classes")
             tt = get_teacher_timetable(timetable, faculty_id_logged)
@@ -87,7 +87,6 @@ if st.sidebar.button("Login"):
             periods = [f"Period {i}" for i in range(1, 7)]
             combined_df = pd.DataFrame("", index=periods, columns=days)
 
-            # Fill combined timetable with teacher's scheduled classes
             if isinstance(tt, dict):
                 for class_id, df in tt.items():
                     for day in days:
@@ -105,7 +104,6 @@ if st.sidebar.button("Login"):
                             if cell and pd.notna(cell) and cell != "":
                                 combined_df.at[period, day] = cell
 
-            # Mark free periods explicitly
             if isinstance(free, dict):
                 for class_id, df in free.items():
                     for day in days:
