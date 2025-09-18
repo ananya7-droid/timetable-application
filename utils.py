@@ -2,19 +2,26 @@ import pandas as pd
 
 def load_data():
     faculty_df = pd.read_csv("faculty.csv")
+    # Parse comma-separated subject_ids and lab_ids into lists for ease
+    def parse_list(df, col):
+        df[col] = df[col].fillna("").apply(lambda x: [i.strip() for i in x.split(",") if i.strip()])
+        return df
+
+    faculty_df = parse_list(faculty_df, "subject_id")
+    faculty_df = parse_list(faculty_df, "lab_id")
+
     subject_df = pd.read_csv("subjects.csv")
     lab_df = pd.read_csv("labs.csv")
     class_df = pd.read_csv("classes.csv")
-    users_df = pd.read_csv("users.csv")  # For login validation if needed
-    timetable_df = pd.DataFrame()  # Initially empty, generate in memory
+    users_df = pd.read_csv("users.csv")
 
-    return faculty_df, subject_df, lab_df, class_df, users_df, timetable_df
+    return faculty_df, subject_df, lab_df, class_df, users_df
 
 def authenticate_user(user_id, password, users_df):
     user = users_df[(users_df['user_id'] == user_id) & (users_df['password'] == password)]
     if not user.empty:
-        return True
-    return False
+        return user.iloc[0].to_dict()
+    return None
 
 def export_timetable_csv(df, filename):
     df.to_csv(filename, index=False)
