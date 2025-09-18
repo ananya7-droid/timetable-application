@@ -48,23 +48,29 @@ def generate_timetable(faculty_df, subject_df, lab_df, class_df, semester_id):
     subj_vars = {}
     lab_vars = {}
 
+    # Theory subject variables
     for s, s_i in subj_index.items():
         for d in range(num_days):
             for p in range(num_periods):
                 subj_vars[(s_i, d, p)] = model.NewBoolVar(f"subj{s}_d{d}_p{p}")
 
+    # Lab variables (each lab spans 2 consecutive periods)
     for l, l_i in lab_index.items():
         for d in range(num_days):
             for p in range(num_periods - 1):
                 lab_vars[(l_i, d, p)] = model.NewBoolVar(f"lab{l}_d{d}_p{p}")
 
-    # Each lab assigned exactly once per week and only once per day
+    # Each lab assigned once per week and only once per day
     for l, l_i in lab_index.items():
         model.Add(sum(lab_vars[(l_i, d, p)] for d in range(num_days) for p in range(num_periods - 1)) == 1)
         for d in range(num_days):
             model.Add(sum(lab_vars[(l_i, d, p)] for p in range(num_periods - 1)) <= 1)
 
-    # Faculty clash avoidance
+    # Constraint: only one lab can be scheduled per day in total (labs span 2 consecutive periods)
+    for d in range(num_days):
+        model.Add(sum(lab_vars[(l_i, d, p)] for l_i in range(len(lab_list)) for p in range(num_periods -1)) <= 1)
+
+    # No faculty clash constraint
     for d in range(num_days):
         for p in range(num_periods):
             for fid in faculty_map.keys():
@@ -81,12 +87,12 @@ def generate_timetable(faculty_df, subject_df, lab_df, class_df, semester_id):
                 if assigned_vars:
                     model.Add(sum(assigned_vars) <= 1)
 
-    # Max 1 occurrence per subject per day
+    # Max one occurrence per subject per day
     for s, s_i in subj_index.items():
         for d in range(num_days):
             model.Add(sum(subj_vars[(s_i, d, p)] for p in range(num_periods)) <= 1)
 
-    # Subjects assigned exactly 4 times per week
+    # Each subject assigned exactly 4 times per week
     for s, s_i in subj_index.items():
         model.Add(sum(subj_vars[(s_i, d, p)] for d in range(num_days) for p in range(num_periods)) == 4)
 
@@ -96,7 +102,7 @@ def generate_timetable(faculty_df, subject_df, lab_df, class_df, semester_id):
             for p in range(num_periods - 1):
                 model.AddBoolOr([subj_vars[(s_i, d, p)].Not(), subj_vars[(s_i, d, p + 1)].Not()])
 
-    # Subjects appear at most once in periods 4,5,6 combined per day
+    # No repeat of subject in last 3 periods combined per day
     for s, s_i in subj_index.items():
         for d in range(num_days):
             model.Add(sum(subj_vars[(s_i, d, p)] for p in range(3, 6)) <= 1)
