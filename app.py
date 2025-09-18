@@ -1,110 +1,114 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
+from utils import (
+    load_data, authenticate_user, export_timetable_csv, export_timetable_excel,
+    get_teacher_timetable_week, get_admin_timetable_semester, save_feedback
+)
 from scheduler import generate_timetable
-from utils import get_teacher_timetable
 
-# Load datasets
-faculty_df = pd.read_csv("data/faculty.csv")
-subjects_df = pd.read_csv("data/subjects.csv")
-labs_df = pd.read_csv("data/labs.csv")
-classes_df = pd.read_csv("data/classes.csv")
-users_df = pd.read_csv("data/users.csv")
+st.set_page_config(page_title="BSc Data Analytics Timetable System", layout="wide")
 
-st.title("Timetable App")
+# Load base data
+faculty_df, subject_df, lab_df, class_df, timetable_df = load_data()
 
-# Map IDs to names for display
-subject_map = pd.Series(subjects_df['subject_name'].values, index=subjects_df['subject_id']).to_dict()
-faculty_map = pd.Series(faculty_df['faculty_name'].values, index=faculty_df['faculty_id']).to_dict()
+# Authentication
+if 'login' not in st.session_state:
+    st.session_state.login = False
 
-def format_cell(cell):
-    if pd.isna(cell) or cell == "":
-        return ""
-    if ":" in cell:
-        sid, fid = [x.strip() for x in cell.split(":", 1)]
-        sub_name = subject_map.get(sid, sid)
-        fac_name = faculty_map.get(fid, fid)
-        return f"{sub_name} ({fac_name})"
+if not st.session_state.login:
+    st.title("Login")
+    user_id = st.text_input("User ID")
+    password = st.text_input("Password", type="password")
+    if st.button("Login"):
+        user = authenticate_user(user_id, password)
+        if user:
+            st.session_state.login = True
+            st.session_state.user = user
+        else:
+            st.error("Invalid credentials")
+else:
+    user = st.session_state.user
+    st.sidebar.title(f"Welcome {user['user_id']} ({user['role']})")
+    st.sidebar.button("Logout", on_click=lambda: st.session_state.clear())
+    
+    # Admin Section
+    if user['role'] == 'admin':
+        st.title("Admin Dashboard - Semester Timetables")
+        semester_selected = st.sidebar.selectbox("Select Semester (Class)", class_df['class_name'].unique())
+        semester_id = class_df[class_df['class_name'] == semester_selected]['class_id'].values[0]
+
+        timetable = get_admin_timetable_semester(timetable_df, semester_id)
+        st.dataframe(timetable.style.format({"StartTime":"{:%H:%M}","EndTime":"{:%H:%M}"}))
+
+        # Export buttons
+        if st.button("Export CSV"):
+            export_timetable_csv(timetable, f"timetable_semester_{semester_id}.csv")
+            st.success("CSV exported successfully")
+        if st.button("Export Excel"):
+            export_timetable_excel(timetable, f"timetable_semester_{semester_id}.xlsx")
+            st.success("Excel exported successfully")
+
+        # Feedback form
+        st.header("Feedback and Issue Reporting")
+        with st.form("feedback_form"):
+            feedback_subject = st.text_input("Subject")
+            feedback_message = st.text_area("Message")
+            submitted = st.form_submit_button("Submit Feedback")
+            if submitted:
+                save_feedback(user['user_id'], feedback_subject, feedback_message)
+                st.success("Feedback submitted. Thank you!")
+                
+    # Teacher Section
+    elif user['role'] == 'teacher':
+        st.title("Teacher Dashboard - Weekly Timetable")
+        teacher_id = user['faculty_id']
+        timetable = get_teacher_timetable_week(timetable_df, teacher_id)
+        if timetable.empty:
+            st.info("No classes scheduled for this week.")
+        else:
+            # Interactive filter by day
+            days = timetable['Day'].unique()
+            selected_day = st.selectbox("Select Day", days)
+            filtered = timetable[timetable['Day'] == selected_day]
+            fig = px.timeline(filtered, x_start="StartTime", x_end="EndTime", y="Day", color="SubjectName",
+                              hover_data=["ClassName", "Room"])
+            fig.update_yaxes(autorange="reversed")
+            st.plotly_chart(fig, use_container_width=True)
+
+            st.dataframe(filtered)
+
+        # Export options
+        if st.button("Export My Timetable CSV"):
+            export_timetable_csv(timetable, f"teacher_timetable_{teacher_id}.csv")
+            st.success("CSV exported successfully")
+        if st.button("Export My Timetable Excel"):
+            export_timetable_excel(timetable, f"teacher_timetable_{teacher_id}.xlsx")
+            st.success("Excel exported successfully")
+
+        # Feedback form
+        st.header("Feedback and Issue Reporting")
+        with st.form("feedback_form"):
+            feedback_subject = st.text_input("Subject")
+            feedback_message = st.text_area("Message")
+            submitted = st.form_submit_button("Submit Feedback")
+            if submitted:
+                save_feedback(user['user_id'], feedback_subject, feedback_message)
+                st.success("Feedback submitted. Thank you!")
+
+    # Dynamic forms for adding/updating data (optional based on role)
+    st.sidebar.header("Data Management")
+    if user['role'] == 'admin':
+        with st.sidebar.expander("Add/Update Faculty"):
+            # Example dynamic form for adding faculty could be implemented here
+            pass
+        with st.sidebar.expander("Add/Update Subject/Lab"):
+            pass
+        
+        if st.sidebar.button("Generate Timetable"):
+            generated_df = generate_timetable(faculty_df, subject_df, lab_df, class_df)
+            # Update timetable.csv or show preview
+            st.write("Timetable generated!")
+            st.dataframe(generated_df)
     else:
-        return cell
-
-def replace_ids(df):
-    return df.applymap(format_cell)
-
-# Login UI
-username = st.sidebar.text_input("Username")
-password = st.sidebar.text_input("Password", type="password")
-
-if st.sidebar.button("Login"):
-    user = users_df[(users_df['user_id'] == username) & (users_df['password'] == password)]
-    if user.empty:
-        st.sidebar.error("Invalid credentials")
-    else:
-        role = user.iloc[0]['role']
-        faculty_id_logged = str(user.iloc[0].get('faculty_id', '')).strip()
-        st.sidebar.success(f"Logged in as {role}")
-
-        timetable = generate_timetable(classes_df, subjects_df, faculty_df, labs_df)
-
-        # Debug: check faculty/subject/timetable data to trace mapping issues
-        st.write("Logged faculty ID:", faculty_id_logged)
-        st.write("Faculty Data:\n", faculty_df)
-        st.write("Subjects Data:\n", subjects_df)
-        st.write("Raw Timetable Data Samples:")
-        for cid, df in timetable.items():
-            st.write(f"Class {cid} Timetable raw:")
-            st.write(df)
-
-        # Format timetable for display
-        for cls in timetable:
-            timetable[cls] = replace_ids(timetable[cls]).T
-
-        if role == "admin":
-            st.subheader("Class Timetables")
-            for cls in classes_df['class_id']:
-                st.markdown(f"### Class {cls}")
-                st.table(timetable.get(str(cls), pd.DataFrame()))
-
-        elif role == "teacher":
-            st.subheader("Your Weekly Timetable Across Classes")
-            tt = get_teacher_timetable(timetable, faculty_id_logged)
-            free = get_teacher_timetable(timetable, faculty_id_logged, free_periods=True)
-
-            days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-            periods = [f"Period {i}" for i in range(1, 7)]
-
-            combined_df = pd.DataFrame("", index=periods, columns=days)
-
-            if isinstance(tt, dict):
-                for class_id, df in tt.items():
-                    for day in days:
-                        for period in periods:
-                            if day in df.columns and period in df.index:
-                                cell = df.at[period, day]
-                                if cell:
-                                    combined_df.at[period, day] += f"{class_id}: {cell}\n"
-            elif isinstance(tt, pd.DataFrame):
-                df = tt
-                for day in days:
-                    for period in periods:
-                        cell = df.at[period, day] if day in df.columns and period in df.index else ""
-                        if cell:
-                            combined_df.at[period, day] = cell
-
-            if isinstance(free, dict):
-                for class_id, df in free.items():
-                    for day in days:
-                        for period in periods:
-                            if day in df.columns and period in df.index:
-                                cell = df.at[period, day]
-                                if (not cell or cell.strip() == "") and combined_df.at[period, day] == "":
-                                    combined_df.at[period, day] = "Free"
-            elif isinstance(free, pd.DataFrame):
-                df = free
-                for day in days:
-                    for period in periods:
-                        if day in df.columns and period in df.index:
-                            cell = df.at[period, day]
-                            if (not cell or cell.strip() == "") and combined_df.at[period, day] == "":
-                                combined_df.at[period, day] = "Free"
-
-            st.table(combined_df)
+        st.sidebar.info("You do not have permissions for data management.")
