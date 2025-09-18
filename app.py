@@ -79,9 +79,10 @@ else:
                     slot_data = day_data[(day_data["Period"] == period) & (day_data["Type"] != "lab")]
                     if not slot_data.empty:
                         names = [get_subject_name(subject_df, row["SubjectID"]) for _, row in slot_data.iterrows()]
-                        grid_df.at[day, f"{period_num}\n{period_times[period -1][1]}"] = ", ".join(names)
+                        name_str = ", ".join(names).strip()
+                        grid_df.at[day, f"{period_num}\n{period_times[period -1][1]}"] = name_str if name_str else "FREE"
                     else:
-                        grid_df.at[day, f"{period_num}\n{period_times[period -1][1]}"] = ""
+                        grid_df.at[day, f"{period_num}\n{period_times[period -1][1]}"] = "FREE"
 
         st.subheader(f"Timetable for {semester_name}")
         st.table(grid_df)
