@@ -2,6 +2,7 @@ import pandas as pd
 
 def load_data():
     faculty_df = pd.read_csv("data/faculty.csv")
+    # Parse lists in faculty_df columns
     def parse_list(df, col):
         df[col] = df[col].fillna("").apply(lambda x: [i.strip() for i in x.split(",") if i.strip()])
         return df
@@ -21,9 +22,6 @@ def authenticate_user(user_id, password, users_df):
     if not user.empty:
         return user.iloc[0].to_dict()
     return None
-
-def export_timetable_csv(df, filename):
-    df.to_csv(filename, index=False)
 
 def export_timetable_excel(df, filename):
     df.to_excel(filename, index=False, engine='openpyxl')
