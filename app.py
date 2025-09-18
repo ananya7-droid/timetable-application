@@ -3,7 +3,7 @@ import pandas as pd
 from scheduler import generate_timetable
 from utils import get_teacher_timetable
 
-# Load CSVs
+# Load CSV data
 faculty_df = pd.read_csv("data/faculty.csv")
 subjects_df = pd.read_csv("data/subjects.csv")
 labs_df = pd.read_csv("data/labs.csv")
@@ -12,7 +12,7 @@ users_df = pd.read_csv("data/users.csv")
 
 st.title("Timetable App")
 
-# Mappings
+# Create lookup maps for display
 subject_map = pd.Series(subjects_df['subject_name'].values, index=subjects_df['subject_id']).to_dict()
 faculty_map = pd.Series(faculty_df['faculty_name'].values, index=faculty_df['faculty_id']).to_dict()
 
@@ -20,7 +20,7 @@ def format_cell(cell):
     if pd.isna(cell) or cell == "":
         return ""
     if ":" in cell:
-        sid, fid = [x.strip() for x in cell.split(":")]
+        sid, fid = [x.strip() for x in cell.split(":", 1)]
         sub_name = subject_map.get(sid, sid)
         fac_name = faculty_map.get(fid, fid)
         return f"{sub_name} ({fac_name})"
@@ -32,7 +32,7 @@ def format_cell(cell):
 def replace_ids(df):
     return df.applymap(format_cell)
 
-# Login inputs
+# Sidebar login
 username = st.sidebar.text_input("Username")
 password = st.sidebar.text_input("Password", type="password")
 
@@ -45,9 +45,10 @@ if st.sidebar.button("Login"):
         faculty_id_logged = str(user.iloc[0].get('faculty_id', '')).strip()
         st.sidebar.success(f"Logged in as {role}")
 
+        # Generate timetable dict[class_id] = DataFrame(periods x days)
         timetable = generate_timetable(classes_df, subjects_df, faculty_df, labs_df)
 
-        # Format and transpose each class timetable for display
+        # Format and transpose for display (periods as rows, days as columns)
         for cls in timetable:
             timetable[cls] = replace_ids(timetable[cls]).T
 
@@ -59,37 +60,40 @@ if st.sidebar.button("Login"):
 
         elif role == "teacher":
             st.subheader("Your Weekly Timetable Across Classes")
-
             tt = get_teacher_timetable(timetable, faculty_id_logged)
             free = get_teacher_timetable(timetable, faculty_id_logged, free_periods=True)
 
             days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
             periods = [f"Period {i}" for i in range(1, 7)]
+
             combined_df = pd.DataFrame("", index=periods, columns=days)
 
+            # Fill scheduled classes
             if isinstance(tt, dict):
                 for class_id, df in tt.items():
                     for day in days:
                         for period in periods:
                             if day in df.columns and period in df.index:
                                 cell = df.at[period, day]
-                                if cell:
+                                if cell and cell.strip() != "":
                                     combined_df.at[period, day] += f"{class_id}: {cell}\n"
             elif isinstance(tt, pd.DataFrame):
                 df = tt
                 for day in days:
                     for period in periods:
-                        cell = df.at[period, day] if day in df.columns and period in df.index else ""
-                        if cell:
-                            combined_df.at[period, day] = cell
+                        if day in df.columns and period in df.index:
+                            cell = df.at[period, day]
+                            if cell and cell.strip() != "":
+                                combined_df.at[period, day] = cell
 
+            # Mark free periods
             if isinstance(free, dict):
                 for class_id, df in free.items():
                     for day in days:
                         for period in periods:
                             if day in df.columns and period in df.index:
                                 cell = df.at[period, day]
-                                if not cell and combined_df.at[period, day] == "":
+                                if (not cell or cell.strip() == "") and combined_df.at[period, day] == "":
                                     combined_df.at[period, day] = "Free"
             elif isinstance(free, pd.DataFrame):
                 df = free
@@ -97,7 +101,7 @@ if st.sidebar.button("Login"):
                     for period in periods:
                         if day in df.columns and period in df.index:
                             cell = df.at[period, day]
-                            if not cell and combined_df.at[period, day] == "":
+                            if (not cell or cell.strip() == "") and combined_df.at[period, day] == "":
                                 combined_df.at[period, day] = "Free"
 
             st.table(combined_df)
