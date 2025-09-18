@@ -2,9 +2,8 @@ import pandas as pd
 
 def load_data():
     faculty_df = pd.read_csv("data/faculty.csv")
-    # Parse lists in faculty_df columns
     def parse_list(df, col):
-        df[col] = df[col].fillna("").apply(lambda x: [i.strip() for i in x.split(",") if i.strip()])
+        df[col] = df[col].fillna("").astype(str).apply(lambda x: [i.strip() for i in x.split(",") if i.strip()])
         return df
 
     faculty_df = parse_list(faculty_df, "subject_id")
