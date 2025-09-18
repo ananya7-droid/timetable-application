@@ -16,12 +16,12 @@ subject_id,subject_name,class_id,type
 001,python lab,2,lab
 002,descriptive statistics lab,2,lab
 301,UID,3,theory
-301,DOD,3,theory
-301,java,3,theory
-301,algebra,3,theory
-301,random variables,3,theory
-301,aptitude,3,theory
-301,reasoning,3,theory
+302,DOD,3,theory
+303,java,3,theory
+304,algebra,3,theory
+305,random variables,3,theory
+306,aptitude,3,theory
+307,reasoning,3,theory
 003,UID lab,3,lab
 004,DOD lab,3,lab
 005,java lab,3,lab
