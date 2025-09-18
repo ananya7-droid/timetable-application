@@ -1,72 +1,77 @@
 import pandas as pd
 
-def generate_timetable(faculty_df, subject_df, lab_df, class_df):
-    """
-    Timetable generation logic respecting constraints:
-    - Teacher availability (mocked here with no clashes)
-    - Max consecutive classes (e.g. 3 max)
-    - No double booking, avoid clashes
-    
-    Returns a timetable DataFrame with columns:
-    ['FacultyID', 'SubjectID', 'ClassID', 'Day', 'StartTime', 'EndTime', 'Room', 'Type']
-    """
-
-    # Include Saturday now
+def generate_timetable(faculty_df, subject_df, lab_df, class_df, semester_id):
     days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-
-    # Updated time slots with 15 min break between 14:55 and 15:10
     time_slots = [
-        ('12:25', '13:15'),
-        ('13:15', '14:05'),
-        ('14:05', '14:55'),
-        # 15 min break (14:55-15:10)
-        ('15:10', '16:00'),
-        ('16:00', '16:50'),
-        ('16:50', '17:40')
+        ("12:25", "13:15"),
+        ("13:15", "14:05"),
+        ("14:05", "14:55"),
+        ("15:10", "16:00"),
+        ("16:00", "16:50"),
+        ("16:50", "17:40"),
     ]
+    total_periods = len(time_slots)
+    period_num = list(range(1, total_periods + 1))
+
+    # Build map of subject to faculty and subject type (lab/theory)
+    # Using comprehensive subject list below to match utils.py
+    subject_type_map = subject_df.set_index('subject_id')['type'].to_dict()
+
+    # Faculty assigned round-robin to subjects just for demo purposes
+    sub_fac_map = {}
+    for i, row in subject_df.iterrows():
+        faculty_index = i % len(faculty_df)
+        faculty = faculty_df.iloc[faculty_index]['faculty_id']
+        sub_fac_map[row['subject_id']] = {
+            "faculty_id": faculty,
+            "type": row['type']
+        }
 
     timetable_records = []
-    faculty_ids = faculty_df['faculty_id'].tolist()
-    subject_ids = subject_df['subject_id'].tolist()
-    class_ids = class_df['class_id'].tolist()
+    assignment_tracker = dict()  # (faculty, day, period) => True
 
-    max_consec = 3
-    idx = 0
+    for subject_id, assign_info in sub_fac_map.items():
+        faculty_id = assign_info['faculty_id']
+        subject_type = assign_info['type']
+        assigned = False
 
-    for cls in class_ids:
         for day in days:
-            consec_cnt = 0
-            last_faculty = None
-            for start, end in time_slots:
-                if idx >= len(faculty_ids):
-                    idx = 0
-                faculty = faculty_ids[idx]
-
-                if last_faculty == faculty:
-                    if consec_cnt >= max_consec:
-                        idx += 1
-                        faculty = faculty_ids[idx % len(faculty_ids)]
-                        consec_cnt = 1
-                    else:
-                        consec_cnt += 1
-                else:
-                    consec_cnt = 1
-
-                last_faculty = faculty
-
-                subject = subject_ids[idx % len(subject_ids)]
-
-                timetable_records.append({
-                    'FacultyID': faculty,
-                    'SubjectID': subject,
-                    'ClassID': cls,
-                    'Day': day,
-                    'StartTime': pd.to_datetime(start).time(),
-                    'EndTime': pd.to_datetime(end).time(),
-                    'Room': f'Room {idx % 5 + 1}',
-                    'Type': 'theory'
-                })
-
-                idx += 1
+            if assigned:
+                break
+            if subject_type == 'lab':
+                for p in range(1, total_periods):
+                    if (faculty_id, day, p) not in assignment_tracker and (faculty_id, day, p+1) not in assignment_tracker:
+                        timetable_records.append({
+                            "FacultyID": faculty_id,
+                            "SubjectID": subject_id,
+                            "ClassID": semester_id,
+                            "Day": day,
+                            "Period": p,
+                            "StartTime": pd.to_datetime(time_slots[p-1][0]).time(),
+                            "EndTime": pd.to_datetime(time_slots[p][1]).time(),
+                            "Room": "Lab 1",
+                            "Type": "lab"
+                        })
+                        assignment_tracker[(faculty_id, day, p)] = True
+                        assignment_tracker[(faculty_id, day, p+1)] = True
+                        assigned = True
+                        break
+            else:
+                for p in period_num:
+                    if (faculty_id, day, p) not in assignment_tracker:
+                        timetable_records.append({
+                            "FacultyID": faculty_id,
+                            "SubjectID": subject_id,
+                            "ClassID": semester_id,
+                            "Day": day,
+                            "Period": p,
+                            "StartTime": pd.to_datetime(time_slots[p-1][0]).time(),
+                            "EndTime": pd.to_datetime(time_slots[p-1][1]).time(),
+                            "Room": "Room 1",
+                            "Type": "theory"
+                        })
+                        assignment_tracker[(faculty_id, day, p)] = True
+                        assigned = True
+                        break
 
     return pd.DataFrame(timetable_records)
