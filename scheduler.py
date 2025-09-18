@@ -4,22 +4,20 @@ import pandas as pd
 def generate_timetable(faculty_df, subject_df, lab_df, class_df, semester_id):
     days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
     time_slots = [
-        ("12:25", "13:15"),
-        ("13:15", "14:05"),
-        ("14:05", "14:55"),
-        ("15:10", "16:00"),
-        ("16:00", "16:50"),
-        ("16:50", "17:40"),
+        ("12:25 PM", "1:15 PM"),
+        ("1:15 PM", "2:05 PM"),
+        ("2:05 PM", "2:55 PM"),
+        ("3:10 PM", "4:00 PM"),
+        ("4:00 PM", "4:50 PM"),
+        ("4:50 PM", "5:40 PM"),
     ]
     total_periods = len(time_slots)
 
-    reduced_subjects = set([105, 106, 206, 207, 208, 306, 307])  # 2 periods/week subjects
-
+    # For your actual dataset, all theory subjects must be 4/week
     semester_subjects = subject_df[subject_df["class_id"] == semester_id].copy()
     semester_labs = lab_df[lab_df["class_id"] == semester_id].copy()
 
     faculty_map = faculty_df.set_index("faculty_id")[["subject_id", "lab_id"]].to_dict(orient="index")
-
     subject_faculty = {}
     for _, subj in semester_subjects.iterrows():
         sid = str(subj["subject_id"])
@@ -27,7 +25,6 @@ def generate_timetable(faculty_df, subject_df, lab_df, class_df, semester_id):
             if sid in assgn.get("subject_id", []):
                 subject_faculty[sid] = fid
                 break
-
     lab_faculty = {}
     for _, lab in semester_labs.iterrows():
         lid = str(lab["lab_id"])
@@ -37,7 +34,6 @@ def generate_timetable(faculty_df, subject_df, lab_df, class_df, semester_id):
                 break
 
     model = cp_model.CpModel()
-
     subj_list = list(subject_faculty.keys())
     lab_list = list(lab_faculty.keys())
 
@@ -60,45 +56,43 @@ def generate_timetable(faculty_df, subject_df, lab_df, class_df, semester_id):
             for p in range(num_periods - 1):
                 lab_vars[(l_i, d, p)] = model.NewBoolVar(f"lab{l}_d{d}_p{p}")
 
+    # Each lab must be scheduled once/week (2 consecutive periods)
     for l, l_i in lab_index.items():
-        model.Add(
-            sum(lab_vars[(l_i, d, p)] for d in range(num_days) for p in range(num_periods - 1)) == 1
-        )
+        model.Add(sum(lab_vars[(l_i, d, p)] for d in range(num_days) for p in range(num_periods - 1)) == 1)
 
+    # Each theory subject scheduled 4 times per week
     for s, s_i in subj_index.items():
-        subj_id_int = int(subj_list[s_i]) if subj_list[s_i].isdigit() else -1
-        required = 2 if subj_id_int in reduced_subjects else 4
-        model.Add(
-            sum(subj_vars[(s_i, d, p)] for d in range(num_days) for p in range(num_periods)) == required
-        )
+        model.Add(sum(subj_vars[(s_i, d, p)] for d in range(num_days) for p in range(num_periods)) == 4)
 
+    # No theory subject more than once per day
     for s, s_i in subj_index.items():
         for d in range(num_days):
             model.Add(sum(subj_vars[(s_i, d, p)] for p in range(num_periods)) <= 1)
 
+    # No consecutive theory periods for same subject in a day
     for s, s_i in subj_index.items():
         for d in range(num_days):
             for p in range(num_periods - 1):
-                model.AddBoolOr(
-                    [subj_vars[(s_i, d, p)].Not(), subj_vars[(s_i, d, p + 1)].Not()]
-                )
+                model.AddBoolOr([subj_vars[(s_i, d, p)].Not(), subj_vars[(s_i, d, p+1)].Not()])
 
+    # Faculty can't have two slots at same time
     for d in range(num_days):
         for p in range(num_periods):
             for fid in faculty_map.keys():
-                assigned_vars = []
+                slots = []
                 for s, s_i in subj_index.items():
                     if subject_faculty[subj_list[s_i]] == fid:
-                        assigned_vars.append(subj_vars[(s_i, d, p)])
+                        slots.append(subj_vars[(s_i, d, p)])
                 for l, l_i in lab_index.items():
                     if lab_faculty[lab_list[l_i]] == fid:
                         if p < num_periods - 1:
-                            assigned_vars.append(lab_vars.get((l_i, d, p), model.NewConstant(0)))
+                            slots.append(lab_vars.get((l_i, d, p), model.NewConstant(0)))
                         if p > 0:
-                            assigned_vars.append(lab_vars.get((l_i, d, p - 1), model.NewConstant(0)))
-                if assigned_vars:
-                    model.Add(sum(assigned_vars) <= 1)
+                            slots.append(lab_vars.get((l_i, d, p-1), model.NewConstant(0)))
+                if slots:
+                    model.Add(sum(slots) <= 1)
 
+    # Only one subject/lab per slot (visual/room clash)
     for d in range(num_days):
         for p in range(num_periods):
             slot_vars = []
@@ -108,7 +102,7 @@ def generate_timetable(faculty_df, subject_df, lab_df, class_df, semester_id):
                 if p < num_periods - 1:
                     slot_vars.append(lab_vars.get((l_i, d, p), model.NewConstant(0)))
                 if p > 0:
-                    slot_vars.append(lab_vars.get((l_i, d, p - 1), model.NewConstant(0)))
+                    slot_vars.append(lab_vars.get((l_i, d, p-1), model.NewConstant(0)))
             model.Add(sum(slot_vars) <= 1)
 
     solver = cp_model.CpSolver()
@@ -120,38 +114,35 @@ def generate_timetable(faculty_df, subject_df, lab_df, class_df, semester_id):
             for d in range(num_days):
                 for p in range(num_periods):
                     if solver.BooleanValue(subj_vars[(s_i, d, p)]):
-                        result.append(
-                            {
-                                "FacultyID": subject_faculty[subj_list[s_i]],
-                                "SubjectID": subj_list[s_i],
-                                "ClassID": semester_id,
-                                "Day": days[d],
-                                "Period": p + 1,
-                                "StartTime": pd.to_datetime(time_slots[p][0]).time(),
-                                "EndTime": pd.to_datetime(time_slots[p][1]).time(),
-                                "Room": "Room 1",
-                                "Type": subject_df.loc[subject_df["subject_id"] == subj_list[s_i], "type"].values[0],
-                            }
-                        )
+                        result.append({
+                            "FacultyID": subject_faculty[subj_list[s_i]],
+                            "SubjectID": subj_list[s_i],
+                            "ClassID": semester_id,
+                            "Day": days[d],
+                            "Period": p+1,
+                            "StartTime": pd.to_datetime(time_slots[p][0]).time(),
+                            "EndTime": pd.to_datetime(time_slots[p][1]).time(),
+                            "Room": "Room 1",
+                            "Type": subject_df.loc[subject_df["subject_id"] == subj_list[s_i], "type"].values[0],
+                        })
 
         for l, l_i in lab_index.items():
             for d in range(num_days):
                 for p in range(num_periods - 1):
                     if solver.BooleanValue(lab_vars[(l_i, d, p)]):
-                        result.append(
-                            {
-                                "FacultyID": lab_faculty[lab_list[l_i]],
-                                "SubjectID": lab_list[l_i],
-                                "ClassID": semester_id,
-                                "Day": days[d],
-                                "Period": p + 1,
-                                "StartTime": pd.to_datetime(time_slots[p][0]).time(),
-                                "EndTime": pd.to_datetime(time_slots[p + 1][1]).time(),
-                                "Room": "Lab 1",
-                                "Type": "lab",
-                            }
-                        )
+                        result.append({
+                            "FacultyID": lab_faculty[lab_list[l_i]],
+                            "SubjectID": lab_list[l_i],
+                            "ClassID": semester_id,
+                            "Day": days[d],
+                            "Period": p+1,
+                            "StartTime": pd.to_datetime(time_slots[p][0]).time(),
+                            "EndTime": pd.to_datetime(time_slots[p+1][1]).time(),
+                            "Room": "Lab 1",
+                            "Type": "lab",
+                            "Span": 2  # for display: spans 2 periods
+                        })
         return pd.DataFrame(result)
     else:
-        st.error("No feasible solution found!")
+        print("No feasible solution found!")
         return pd.DataFrame()
