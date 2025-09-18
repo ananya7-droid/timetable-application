@@ -26,17 +26,17 @@ Install dependencies:
 
 bash
 pip install -r requirements.txt
-Usage
 
+Usage:
 Run the Streamlit app:
 
-bash
+- bash
 streamlit run app.py
 Login as admin
 
-Click "Generate Timetable" for the chosen semester/class
+- Click "Generate Timetable" for the chosen semester/class
 
-View the timetable and export to Excel if needed
+- View the timetable and export to Excel if needed
 
 Data Format:
 Place input CSV files in the data/ folder:
