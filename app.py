@@ -1,16 +1,14 @@
 import streamlit as st
 import pandas as pd
 from utils import (
-    load_data, authenticate_user, export_timetable_csv, export_timetable_excel, get_subject_name
+    load_data, authenticate_user, export_timetable_csv,
+    export_timetable_excel, get_subject_name
 )
 from scheduler import generate_timetable
 
 st.set_page_config(page_title="Admin Timetable Generator", layout="wide")
 
-faculty_df, subject_df, lab_df, class_df, _ = load_data()
-
-ADMIN_USER = "admin"
-ADMIN_PASSWORD = "admin123"
+faculty_df, subject_df, lab_df, class_df, users_df = load_data()
 
 if 'login' not in st.session_state:
     st.session_state.login = False
@@ -24,13 +22,15 @@ if not st.session_state.login:
     user_id = st.text_input("User ID")
     password = st.text_input("Password", type="password")
     if st.button("Login"):
-        if authenticate_user(user_id, password):
+        user = authenticate_user(user_id, password, users_df)
+        if user is not None and user['role'] == 'admin':
             st.session_state.login = True
-            st.session_state.user_id = user_id
+            st.session_state.user = user
         else:
-            st.error("Invalid admin credentials")
+            st.error("Invalid credentials or unauthorized")
+
 else:
-    st.sidebar.title("Welcome Admin")
+    st.sidebar.title(f"Welcome Admin")
     if st.sidebar.button("Logout"):
         logout()
 
@@ -47,10 +47,12 @@ else:
         st.session_state.timetable = timetable_df
         st.success(f"Timetable generated for {semester_selected}!")
 
-    if st.session_state.timetable.empty:
+    timetable_df = st.session_state.timetable
+    if timetable_df.empty:
         st.info("No timetable generated yet.")
     else:
-        timetable_df = st.session_state.timetable[st.session_state.timetable['ClassID'] == semester_id]
+        # Show timetable filtered to selected semester
+        filtered_tt = timetable_df[timetable_df['ClassID'] == semester_id].copy()
 
         days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
         period_times = [
@@ -66,27 +68,27 @@ else:
         grid_df = pd.DataFrame(index=days, columns=columns)
 
         for day in days:
-            day_data = timetable_df[timetable_df['Day'] == day]
+            day_data = filtered_tt[filtered_tt['Day'] == day]
             for period_num, _ in period_times:
                 period = int(period_num)
-                slot_data = day_data[(day_data['Period'] == period)]
+                slot_data = day_data[day_data['Period'] == period]
                 if not slot_data.empty:
                     subj_names = []
                     for _, row in slot_data.iterrows():
                         subj_names.append(
-                            get_subject_name(subject_df, row['SubjectID'])
-                            + (" (Lab)" if row['Type'] == 'lab' else "")
+                            get_subject_name(subject_df, row['SubjectID']) +
+                            (" (Lab)" if row['Type'] == 'lab' else "")
                         )
-                    grid_df.at[day, f"{period_num}\n{period_times[period-1][1]}"] = ", ".join(subj_names)
+                    grid_df.at[day, f"{period_num}\n{period_times[period - 1][1]}"] = ", ".join(subj_names)
                 else:
-                    grid_df.at[day, f"{period_num}\n{period_times[period-1][1]}"] = ""
+                    grid_df.at[day, f"{period_num}\n{period_times[period - 1][1]}"] = ""
 
         st.subheader(f"Timetable for {semester_selected}")
         st.table(grid_df)
 
         if st.button("Export Timetable CSV"):
-            export_timetable_csv(timetable_df, f"timetable_semester_{semester_id}.csv")
+            export_timetable_csv(filtered_tt, f"timetable_semester_{semester_id}.csv")
             st.success("CSV exported")
         if st.button("Export Timetable Excel"):
-            export_timetable_excel(timetable_df, f"timetable_semester_{semester_id}.xlsx")
+            export_timetable_excel(filtered_tt, f"timetable_semester_{semester_id}.xlsx")
             st.success("Excel exported")
