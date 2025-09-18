@@ -1,26 +1,7 @@
 faculty_id,faculty_name,subject_id,lab_id
-F1,Santha Kumari,"101,201",
-F2,Neeraja,"102,202",
-F3,Venkateswar Rao,"103,104",
-F4,Pandu Ranga Rao,"103,104",
-F5,Kiran,"103,104",
-F6,Sirisha,"103,206",
-F7,Naga Sasanka,105,
-F8,Lakshmi,106,
-F9,Naga Lakshmi,"204,301",
-F10,Munni Narendra,205,001
-F11,Ravi Babu,204,
-F12,Rakesh,"203,405,505","002,011,016"
-F13,Kusuma Rohini,207,
-F14,Ravi Shankar,208,
-F15,Sowmya,301,003
-F16,Samhita Reddy,"301,501","005,012"
-F17,Sreeja,301,005
-F18,Balaji,506,"006,017"
-F19,Venkatesh,301,
-F20,Rajya Lakshmi,"401,502","007,013"
-F21,Swetha,"402,503","008,014"
-F22,Siva Naga Raju,404,010
-F23,Kavya Sree,403,009
-F24,Sreenivasa Rao,106,
-F25,Raheem,504,015
+F1,samhitha mam,501,l1
+F2,rajyalakshmi mam,502,l2
+F3,swetha mam,503,l3
+F4,raheem sir,504,l4
+F5,rakesh sir,505,l5
+F6,balaji sir,506,l6
