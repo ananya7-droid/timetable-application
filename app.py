@@ -1,9 +1,3 @@
-import os
-import streamlit as st
-
-st.write("Current working directory:", os.getcwd())
-st.write("Files in current directory:", os.listdir('.'))
-
 import streamlit as st
 import pandas as pd
 from utils import (
