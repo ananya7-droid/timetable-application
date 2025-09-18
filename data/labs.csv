@@ -1,18 +1,7 @@
 lab_id,lab_name,class_id
-001,python lab,1
-002,descriptive statistics lab,1
-003,UID lab,2
-004,DOD lab,2
-005,java lab,2
-006,random variables lab,2
-007,PE lab,2
-008,EDA lab,2
-009,OS lab,2
-010,sampling distributions lab,2
-011,inference lab,2
-012,NLP lab,3
-013,BDA lab,3
-014,power BI lab,3
-015,ML lab,3
-016,applied statistics lab,3
-017,operations research lab,3
+l1,NLP lab,1
+l2,BDA lab,1
+l3,power BI lab,1
+l4,ML lab,1
+l5,applied statistics lab,1
+l6,operations research lab,1
