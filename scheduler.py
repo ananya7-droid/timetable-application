@@ -4,24 +4,25 @@ def generate_timetable(classes_df, subjects_df, faculty_df, labs_df):
     days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
     periods = [f"Period {i}" for i in range(1, 7)]
 
+    # Map subject → faculty_id
     subject_faculty = {}
-    for _, row in faculty_df.iterrows():
-        subj_str = str(row['subject_ids']).strip()
-        if subj_str and subj_str.lower() != 'nan':
-            for sid in subj_str.split(','):
-                sid = sid.strip()
-                if sid:
-                    subject_faculty[sid] = str(row['faculty_id']).strip()
+    for _, frow in faculty_df.iterrows():
+        # clean whitespace
+        subj_ids = str(frow['subject_ids']).split(',')
+        for sid in subj_ids:
+            sid = sid.strip()
+            if sid:
+                subject_faculty[sid] = frow['faculty_id']
 
     timetable = {}
-
-    for _, row in classes_df.iterrows():
-        class_id = row['class_id']
+    for _, class_row in classes_df.iterrows():
+        class_id = class_row['class_id']
         subs = subjects_df[subjects_df['class_id'] == class_id]['subject_id'].tolist()
 
         df = pd.DataFrame(index=periods, columns=days)
 
         if not subs:
+            # no subjects — fill blanks
             for day in days:
                 for period in periods:
                     df.at[period, day] = ""
@@ -31,7 +32,6 @@ def generate_timetable(classes_df, subjects_df, faculty_df, labs_df):
                     sid = subs[(i + j) % len(subs)]
                     fid = subject_faculty.get(sid, "")
                     df.at[period, day] = f"{sid}:{fid}"
-
-        timetable[str(class_id)] = df
+        timetable[class_id] = df
 
     return timetable
