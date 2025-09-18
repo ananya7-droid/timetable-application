@@ -2,8 +2,11 @@ import pandas as pd
 
 def load_data():
     faculty_df = pd.read_csv("data/faculty.csv")
+    # Make sure subject_id and lab_id columns are always lists of strings
     def parse_list(df, col):
-        df[col] = df[col].fillna("").astype(str).apply(lambda x: [i.strip() for i in x.split(",") if i.strip()])
+        df[col] = df[col].fillna("").astype(str).apply(
+            lambda x: [i.strip() for i in x.split(",") if i.strip()]
+        )
         return df
 
     faculty_df = parse_list(faculty_df, "subject_id")
@@ -13,7 +16,6 @@ def load_data():
     lab_df = pd.read_csv("data/labs.csv")
     class_df = pd.read_csv("data/classes.csv")
     users_df = pd.read_csv("data/users.csv")
-
     return faculty_df, subject_df, lab_df, class_df, users_df
 
 def authenticate_user(user_id, password, users_df):
