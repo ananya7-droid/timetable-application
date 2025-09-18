@@ -3,7 +3,7 @@ import pandas as pd
 from scheduler import generate_timetable
 from utils import get_teacher_timetable
 
-# Load CSV data
+# Load datasets
 faculty_df = pd.read_csv("data/faculty.csv")
 subjects_df = pd.read_csv("data/subjects.csv")
 labs_df = pd.read_csv("data/labs.csv")
@@ -12,7 +12,7 @@ users_df = pd.read_csv("data/users.csv")
 
 st.title("Timetable App")
 
-# Mapping dicts for display
+# Map IDs to names for display
 subject_map = pd.Series(subjects_df['subject_name'].values, index=subjects_df['subject_id']).to_dict()
 faculty_map = pd.Series(faculty_df['faculty_name'].values, index=faculty_df['faculty_id']).to_dict()
 
@@ -24,8 +24,6 @@ def format_cell(cell):
         sub_name = subject_map.get(sid, sid)
         fac_name = faculty_map.get(fid, fid)
         return f"{sub_name} ({fac_name})"
-    elif isinstance(cell, str) and cell in subject_map:
-        return subject_map[cell]
     else:
         return cell
 
@@ -45,15 +43,19 @@ if st.sidebar.button("Login"):
         faculty_id_logged = str(user.iloc[0].get('faculty_id', '')).strip()
         st.sidebar.success(f"Logged in as {role}")
 
-        # Generate timetable
         timetable = generate_timetable(classes_df, subjects_df, faculty_df, labs_df)
 
-        # Debug output to help trace
-        st.text(f"Faculty ID logged in: {faculty_id_logged}")
-        st.text(f"Available classes: {list(timetable.keys())}")
+        # Debug: check faculty/subject/timetable data to trace mapping issues
+        st.write("Logged faculty ID:", faculty_id_logged)
+        st.write("Faculty Data:\n", faculty_df)
+        st.write("Subjects Data:\n", subjects_df)
+        st.write("Raw Timetable Data Samples:")
+        for cid, df in timetable.items():
+            st.write(f"Class {cid} Timetable raw:")
+            st.write(df)
 
-        # Format & transpose timetable display
-        for cls in timetable.keys():
+        # Format timetable for display
+        for cls in timetable:
             timetable[cls] = replace_ids(timetable[cls]).T
 
         if role == "admin":
