@@ -49,7 +49,7 @@ if st.sidebar.button("Login"):
         
         timetable = generate_timetable(classes_df, subjects_df, faculty_df, labs_df)
         
-        # Format and transpose each class timetable for display
+        # Format and transpose timetable for display
         for cls in list(timetable.keys()):
             df_raw = timetable[cls]
             df_fmt = replace_ids(df_raw)
