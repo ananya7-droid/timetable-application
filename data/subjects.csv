@@ -1,50 +1,13 @@
 subject_id,subject_name,class_id,type
-101,english1,1,theory
-102,telugu1,1,theory
-103,essential MPC,1,theory
-104,advanced,1,theory
-105,design thinking,1,theory
-106,principles of management,1,theory
-201,english2,2,theory
-202,telugu2,2,theory
-203,descriptive statistics,2,theory
-204,discrete maths,2,theory
-205,python,2,theory
-206,environmental education,2,theory
-207,economics,2,theory
-208,cyber security,2,theory
-001,python lab,2,lab
-002,descriptive statistics lab,2,lab
-301,UID,3,theory
-302,DOD,3,theory
-303,java,3,theory
-304,algebra,3,theory
-305,random variables,3,theory
-306,aptitude,3,theory
-307,reasoning,3,theory
-003,UID lab,3,lab
-004,DOD lab,3,lab
-005,java lab,3,lab
-006,random variables lab,3,lab
-401,prompt engineering,4,theory
-402,EDA,4,theory
-403,OS,4,theory
-404,sampling distributions,4,theory
-405,inference,4,theory
-007,PE lab,4,lab
-008,EDA lab,4,lab
-009,OS lab,4,lab
-010,sampling distributions lab,4,lab
-011,inference lab,4,lab
-501,NLP,5,theory
-502,BDA,5,theory
-503,power BI,5,theory
-504,ML,5,theory
-505,applied statistics,5,theory
-506,operations research,5,theory
-012,NLP lab,5,lab
-013,BDA lab,5,lab
-014,power BI lab,5,lab
-015,ML lab,5,lab
-016,applied statistics lab,5,lab
-017,operations research lab,5,lab
+501,NLP,1,theory
+502,BDA,1,theory
+503,power BI,1,theory
+504,ML,1,theory
+505,applied statistics,1,theory
+506,operations research,1,theory
+l1,NLP lab,1,lab
+l2,BDA lab,1,lab
+l3,power BI lab,1,lab
+l4,ML lab,1,lab
+l5,applied statistics lab,1,lab
+l6,operations research lab,1,lab
