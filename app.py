@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import io
 from scheduler import generate_timetable
-from .utils import get_teacher_day_timetable
+from utils import get_teacher_day_timetable
 
 # Load default base CSVs (developer mode)
 faculty_df = pd.read_csv("data/faculty.csv")
