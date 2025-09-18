@@ -1,43 +1,38 @@
 import pandas as pd
 
-def get_class_timetable(timetable_dict, class_id):
-    return timetable_dict.get(str(class_id), pd.DataFrame())
+def generate_timetable(classes_df, subjects_df, faculty_df, labs_df):
+    days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    periods = [f'Period {i}' for i in range(1, 7)]
 
-def get_teacher_timetable(timetable_dict, faculty_id, free_periods=False):
-    faculty_id = str(faculty_id).strip()
-    result = {}
+    # Map subject_id → faculty_id (strip and convert to strings)
+    subject_faculty = {}
+    for _, frow in faculty_df.iterrows():
+        subj_str = str(frow['subject_ids']).strip()
+        if subj_str and subj_str.lower() != 'nan':
+            subj_ids = subj_str.split(',')
+            for sid in subj_ids:
+                sid = sid.strip()
+                if sid:
+                    subject_faculty[sid] = str(frow['faculty_id']).strip()
 
-    for class_id, df in timetable_dict.items():
-        def has_fac(cell):
-            if pd.isna(cell) or cell == "":
-                return False
-            if isinstance(cell, str) and ":" in cell:
-                parts = cell.split(":")
-                if len(parts) >= 2:
-                    fac_part = parts[1].strip()
-                    if fac_part == faculty_id:
-                        return True
-            return False
+    timetable = {}
 
-        mask = df.applymap(has_fac)
-        if free_periods:
-            filtered = df.where(~mask)
+    for _, class_row in classes_df.iterrows():
+        class_id = class_row['class_id']  # keep original (int)
+        subs = subjects_df[subjects_df['class_id'] == class_id]['subject_id'].tolist()
+
+        df = pd.DataFrame(index=periods, columns=days)
+        if not subs:
+            for day in days:
+                for period in periods:
+                    df.at[period, day] = ""
         else:
-            filtered = df.where(mask)
-        
-        filtered = filtered.dropna(how='all', axis=0).dropna(how='all', axis=1)
+            for i, period in enumerate(periods):
+                for j, day in enumerate(days):
+                    sid = subs[(i + j) % len(subs)]
+                    fid = subject_faculty.get(sid, "").strip()
+                    df.at[period, day] = f"{sid}:{fid}"
 
-        if not filtered.empty:
-            result[class_id] = filtered
+        timetable[str(class_id)] = df  # convert to string as dict keys
 
-    if not result:
-        return pd.DataFrame()
-    if len(result) == 1:
-        return next(iter(result.values()))
-    return result
-
-def export_timetable(timetable_dict, filename):
-    import pandas as pd
-    with pd.ExcelWriter(filename, engine='xlsxwriter') as writer:
-        for class_id, df in timetable_dict.items():
-            df.to_excel(writer, sheet_name=class_id)
+    return timetable
