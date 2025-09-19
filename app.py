@@ -12,7 +12,7 @@ if "login" not in st.session_state:
 
 def logout():
     st.session_state.clear()
-    st.experimental_rerun()
+    st.rerun()
 
 if not st.session_state.login:
     st.title("Admin Login")
